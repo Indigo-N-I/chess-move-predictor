@@ -1,0 +1,3 @@
+1. Import chess games from lichess
+  a. Check if lichess has timestamps for games and if there are timestamps, remove time scramble moves (under 20 seconds left on clock)
+2. Create algorithm w/ scores being accruacy in predicting next move
