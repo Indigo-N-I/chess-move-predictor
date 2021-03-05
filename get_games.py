@@ -2,8 +2,6 @@ import berserk
 from datetime import datetime
 import berserk.utils
 
-
-
 def get_games(user: str, start: datetime, end:datetime, games: int = 100):
     client = berserk.Client()
 

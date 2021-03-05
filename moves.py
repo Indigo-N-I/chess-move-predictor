@@ -6,6 +6,7 @@ import chess
 from datetime import datetime
 import io
 import numpy as np
+from get_games import get_games, split_bw
 
 def process_board(iBoard):
     '''
@@ -48,7 +49,6 @@ def process_board(iBoard):
     # print(iBoard)
     return np_board
 
-
 def gen_data(game, white: bool):
     pgn = io.StringIO(game)
     game = chess.pgn.read_game(pgn)
@@ -58,13 +58,14 @@ def gen_data(game, white: bool):
     data = []
     save_move = white
     for move in game.mainline_moves():
+        # print(move)
         # print(board)
         if save_move:
             legal = []
             for legal_move in board.legal_moves:
                 legal.append(str(legal_move))
 
-            data.append((process_board(str(board)), legal, str(move)))
+            data.append([process_board(str(board)), legal, str(move)])
 
         board.push(move)
         save_move = not save_move
@@ -73,16 +74,32 @@ def gen_data(game, white: bool):
 
 def gen_all(white_games, black_games):
     data = []
-    for game in white_games:
-        data.extend(gen_data(game, white = True))
+    data.extend(gen_games(white_games, True))
+    data.extend(gen_games(black_games, False))
 
-    for game in black_games:
-        data.extend(gen_data(game, white = False))
+    return data
+
+def gen_games(games, white):
+    data = []
+
+    for game in games:
+        data.extend(gen_data(game, white))
+
+    return data
+
+def get_moves(name, start, end, games, split = True):
+    retreaved_games = get_games('whoisis', start, end, games)
+
+    white, black = split_bw(retreaved_games, 'whoisis')
+
+    if split:
+        return gen_games(white, True), gen_games(black, False)
+
+    data = gen_all(white, black)
 
     return data
 
 if __name__ == "__main__":
-    from get_games import get_games, split_bw
 
     start = datetime(2018, 12, 8)
     end = datetime(2020, 12, 9)
@@ -93,4 +110,4 @@ if __name__ == "__main__":
     white, black = split_bw(retreaved_games, 'whoisis')
     # print(white[0].index('1. '))
     data = gen_all(white, black)
-    print(data)
+    # print(data)
