@@ -18,11 +18,11 @@ class MaskingLayer(nn.Module):
     #     self.set_mask(mask)
 
     def forward(self, input):
-        print("doing allowvalid")
+        # print("doing allowvalid")
         b = AllowValid.apply
         a = b(input, self.to_mask)
-        print(a)
-        return AllowValid(input, self.to_mask)
+        # print(a)
+        return b(input, self.to_mask)
 
     def set_mask(self, mask):
         # print('set mask to:', mask)
@@ -63,7 +63,9 @@ def translate_to_num(location):
     '''
     #A1 -> 0
     #B1 -> 1
+    # print(location)
     add = ord(location[0]) - ord('a')
+    # print(add)
     return (int(location[1]) - 1)*8 + add
     # pass
 
@@ -86,7 +88,7 @@ def piece_select_loss(output, valid, target):
     allowed_starts = [translate_to_num(move[:2]) for move in valid]
     possible = allow_only_valid(output, allowed_starts)
     c = nn.CrossEntropyLoss()
-    print(possible.size())
+    # print(possible.size())
     return c(possible, torch.tensor([translate_to_num(target[:2])]))
 
 def legal_start(moves):
@@ -101,7 +103,7 @@ def legal_start(moves):
 
     return list(set(legal))
 
-def legal_end(moves, start):
+def legal_end(moves):
     '''
     Given a list of legal moves and the starting location of the move, finds valid end positions of the move
 
@@ -109,8 +111,9 @@ def legal_end(moves, start):
     '''
     legal = []
     for move in moves:
-        if moves[:2] == start:
-            legal.append(translate_to_num[-2:])
+        # print(moves)
+        # print(move)
+        legal.append(translate_to_num(move[2:4]))
 
     return legal
 
@@ -118,29 +121,51 @@ if __name__ == "__main__":
 
     start = datetime(2018, 12, 8)
     end = datetime(2020, 12, 9)
-    games = 20
+    games = 500
+    print("gathering games")
 
     white, black = get_moves('whoisis', start, end, games, split = True)
     for i in range(len(black)):
         black[i][0] *= -1
 
+    # black.extend(white)
+    # print(black[-1])
+    print("transorming data")
     x = [data[0] for data in black]
     valid = [legal_start(data[1]) for data in black]
-    print(torch.tensor(x).shape)
-    print(print(len(valid)))
+    target = torch.tensor(legal_end([data[2] for data in black]))
+    # print(torch.tensor(x).shape)
+    # print(print(len(valid)))
 
-
+    print("creating network")
     test = PieceSelection()
+    criterion = nn.CrossEntropyLoss()
+    lr = .01
     opt = optim.SGD(test.parameters(), lr = .01)
-    print(test)
+    # print(test)
 
-    for i in range(20):
-        opt.zero_grad()
-        output = test(torch.tensor(x).type(torch.FloatTensor), valid)
-        # print(output)
-        # loss = piece_select_loss(x, valid, black[0][2])
-        # loss.backward()
-        # opt.step()
+    print("training")
+    for epoch in range(35):
+        running_loss = 0.0
+        opt = optim.SGD(test.parameters(), lr = lr*(.9**epoch))
+        for index, data in enumerate(x):
+            # print(valid[index])
+            opt.zero_grad()
+            output = test(torch.tensor([data]).type(torch.FloatTensor), valid[index])
+            # print(output, "Target", torch.tensor([target[index]]).shape)
+            loss = criterion(output, torch.tensor([target[index]]))
+            loss.backward()
+            opt.step()
+
+            running_loss += loss.item()
+            if index % 2000 == 1999:    # print every 2000 mini-batches
+                print('[%d, %5d] loss: %.3f' %
+                      (epoch + 1, index + 1, running_loss / 2000))
+                running_loss = 0.0
+            # print(loss.item())
+
+            # running_loss += loss.item()
+            # if
 
 
 

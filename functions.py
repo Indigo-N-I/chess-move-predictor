@@ -15,7 +15,7 @@ class AllowValid(torch.autograd.Function):
         '''
         Valid is the list of valid indexes
         '''
-        print(ctx)
+        # print(ctx)
         ctx.save_for_backward(inputs)
         ctx.valid = valid
 
@@ -23,7 +23,7 @@ class AllowValid(torch.autograd.Function):
             c = np.zeros(inputs[i].shape)
             c[ctx.valid[i]] = 1
             d = np.ma.masked_array(inputs[i], mask = c)
-            d *= 0
+            d *= 3
         # print(ctx.valid[13], "<- to mask")
         # print(inputs[13], '<- result')
 
@@ -32,8 +32,15 @@ class AllowValid(torch.autograd.Function):
     @staticmethod
     def backward(ctx, grad_output):
         input, = ctx.saved_tensors
+        # print(grad_output.shape)
         grad_input = grad_output.clone()
-        return allow_only_valid(grad_input)
+        for i in range(input.shape[0]):
+            c = np.zeros(input[i].shape)
+            c[ctx.valid[i]] = 1
+            d = np.ma.masked_array(grad_input[i], mask = c)
+            d *= 3
+        # print(grad_input.shape)
+        return grad_input, None
 
 
 if __name__ == "__main__":
