@@ -43,12 +43,12 @@ class PieceSelection(nn.Module):
 
         self.flatten = nn.Flatten()
         self.linear_relu_stack = nn.Sequential(
+            nn.Linear(64, 128),
+            # nn.Dropout(),
+            nn.LeakyReLU(),
+            nn.Linear(128, 64),
             self.mask,
-            nn.Linear(64, 64),
-            self.mask,
-            nn.Linear(64, 64),
-            self.mask,
-
+            # self.mask
         )
 
     def forward(self, x, valid = ''):
@@ -123,7 +123,7 @@ if __name__ == "__main__":
 
     start = datetime(2018, 12, 8)
     end = datetime(2021, 3, 7)
-    games = 300
+    games = 1000
     print("gathering games")
 
     white, black = get_moves('whoisis', start, end, games, split = True)
@@ -184,15 +184,15 @@ if __name__ == "__main__":
             quest += 1
         print(f"Correct Precent test: {correct/quest}")
 
-        correct = 0
-        quest = 0
-        for index, data in enumerate(x):
-            output = test(torch.tensor([data]).type(torch.FloatTensor), valid[index])
-            _, predicted = torch.max(output, 1)
-            if predicted[0] == target[index]:
-                correct += 1
-            quest += 1
-        print(f"Correct Precent train: {correct/quest}")
+    correct = 0
+    quest = 0
+    for index, data in enumerate(x):
+        output = test(torch.tensor([data]).type(torch.FloatTensor), valid[index])
+        _, predicted = torch.max(output, 1)
+        if predicted[0] == target[index]:
+            correct += 1
+        quest += 1
+    print(f"Correct Precent train: {correct/quest}")
     # cwd = os.getcwd()
     # torch.save(test.state_dict(), cwd)
             # print(loss.item())
