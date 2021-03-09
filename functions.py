@@ -24,6 +24,7 @@ class AllowValid(torch.autograd.Function):
             c = np.ones(inputs.shape)
             c[:,ctx.valid] = 0
             d = np.ma.masked_array(inputs[i], mask = c)
+            # print('here1')
             d = np.ma.exp(d)
             d = d + 1
             d = np.ma.log(d)
@@ -40,6 +41,7 @@ class AllowValid(torch.autograd.Function):
             c = np.ones(input.shape)
             c[:,ctx.valid] = 0
             d = np.ma.masked_array(input[i], mask = c)
+            # print('here')
             d = np.ma.exp(d)
             # print("input:", grad_input)
             # print("D:", d)
@@ -57,25 +59,9 @@ class AllowValid(torch.autograd.Function):
             d = torch.tensor([d.data]) * grad_input
         # print(grneruad_input.shape)
         # print(torch.tensor(d))
-        return d, None
+        return torch.tensor(d), None
         # return , None
 
-def sigmoid(x):
-    x = x * -1
-    x = np.ma.exp9x)
-    x = x + 1
-    x = x ** -1
-    return x
-
-def sig_prime(x):
-    x = sigmoid(x)
-    y = x ** 2
-    return y - x
-
-def sig_double(x):
-    x = sig_prime(x)
-    y = sigmoid(x)
-    return 2*x*y - x
 
 if __name__ == "__main__":
     AV = AllowValid.apply

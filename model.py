@@ -48,7 +48,7 @@ class PieceSelection(nn.Module):
             nn.LeakyReLU(),
             nn.Linear(128, 64),
             self.mask,
-            # self.mask
+            self.mask
         )
 
     def forward(self, x, valid = ''):
@@ -123,7 +123,7 @@ if __name__ == "__main__":
 
     start = datetime(2018, 12, 8)
     end = datetime(2021, 3, 7)
-    games = 1000
+    games = 20
     print("gathering games")
 
     white, black = get_moves('whoisis', start, end, games, split = True)
