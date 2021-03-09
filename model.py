@@ -8,6 +8,7 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 import torch.optim as optim
 from functions import AllowValid
+from sklearn.model_selection import train_test_split
 
 class MaskingLayer(nn.Module):
     def __init__(self):
@@ -42,12 +43,12 @@ class PieceSelection(nn.Module):
 
         self.flatten = nn.Flatten()
         self.linear_relu_stack = nn.Sequential(
-            nn.Linear(64, 512),
-            nn.ReLU(),
-            nn.Linear(512, 512),
-            nn.ReLU(),
-            nn.Linear(512, 64),
-            self.mask
+            self.mask,
+            nn.Linear(64, 64),
+            self.mask,
+            nn.Linear(64, 64),
+            self.mask,
+
         )
 
     def forward(self, x, valid = ''):
@@ -56,6 +57,7 @@ class PieceSelection(nn.Module):
         self.mask.set_mask(valid)
         logits = self.linear_relu_stack(x)
         return logits
+
 
 def translate_to_num(location):
     '''
@@ -120,8 +122,8 @@ def legal_end(moves):
 if __name__ == "__main__":
 
     start = datetime(2018, 12, 8)
-    end = datetime(2020, 12, 9)
-    games = 500
+    end = datetime(2021, 3, 7)
+    games = 300
     print("gathering games")
 
     white, black = get_moves('whoisis', start, end, games, split = True)
@@ -131,9 +133,15 @@ if __name__ == "__main__":
     # black.extend(white)
     # print(black[-1])
     print("transorming data")
-    x = [data[0] for data in black]
-    valid = [legal_start(data[1]) for data in black]
-    target = torch.tensor(legal_end([data[2] for data in black]))
+    train, test = train_test_split(black)
+
+    x = [data[0] for data in train]
+    valid = [legal_start(data[1]) for data in train]
+    target = torch.tensor(legal_end([data[2] for data in train]))
+
+    x_test = [data[0] for data in test]
+    valid_test = [legal_start(data[1]) for data in test]
+    target_test = torch.tensor(legal_end([data[2] for data in test]))
     # print(torch.tensor(x).shape)
     # print(print(len(valid)))
 
@@ -144,6 +152,9 @@ if __name__ == "__main__":
     opt = optim.SGD(test.parameters(), lr = .01)
     # print(test)
 
+    # cwd = os.getcwd()
+    # torch.save(test.state_dict(), cwd)
+
     print("training")
     for epoch in range(35):
         running_loss = 0.0
@@ -152,7 +163,7 @@ if __name__ == "__main__":
             # print(valid[index])
             opt.zero_grad()
             output = test(torch.tensor([data]).type(torch.FloatTensor), valid[index])
-            # print(output, "Target", torch.tensor([target[index]]).shape)
+            # print(torch.tensor(output).shape, output)
             loss = criterion(output, torch.tensor([target[index]]))
             loss.backward()
             opt.step()
@@ -162,6 +173,28 @@ if __name__ == "__main__":
                 print('[%d, %5d] loss: %.3f' %
                       (epoch + 1, index + 1, running_loss / 2000))
                 running_loss = 0.0
+        print(f"epoch {epoch} results")
+        correct = 0
+        quest = 0
+        for index, data in enumerate(x_test):
+            output = test(torch.tensor([data]).type(torch.FloatTensor), valid_test[index])
+            _, predicted = torch.max(output, 1)
+            if predicted[0] == target_test[index]:
+                correct += 1
+            quest += 1
+        print(f"Correct Precent test: {correct/quest}")
+
+        correct = 0
+        quest = 0
+        for index, data in enumerate(x):
+            output = test(torch.tensor([data]).type(torch.FloatTensor), valid[index])
+            _, predicted = torch.max(output, 1)
+            if predicted[0] == target[index]:
+                correct += 1
+            quest += 1
+        print(f"Correct Precent train: {correct/quest}")
+    # cwd = os.getcwd()
+    # torch.save(test.state_dict(), cwd)
             # print(loss.item())
 
             # running_loss += loss.item()

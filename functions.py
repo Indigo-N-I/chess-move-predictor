@@ -16,18 +16,36 @@ class AllowValid(torch.autograd.Function):
         Valid is the list of valid indexes
         '''
         # print(ctx)
+        # print("inputs:", inputs, inputs.shape)
         ctx.save_for_backward(inputs)
         ctx.valid = valid
 
         for i in range(inputs.shape[0]):
-            c = np.zeros(inputs[i].shape)
-            c[ctx.valid[i]] = 1
+            c = np.ones(inputs.shape)
+            # print(c)
+            c[:,ctx.valid] = 0
             d = np.ma.masked_array(inputs[i], mask = c)
-            d *= 3
+            # print(d)
+            # print("masked")
+            # print(d.data)
+            d = np.ma.exp(d)
+            # print("exp")
+            # print(d.data)
+            d = d + 1
+            # print("+1")
+            # print(d.data)
+            d = np.ma.log(d)
+            # print("log")
+            # print(d.data)
+            # inputs[i] = np.ma.getdata(d)
         # print(ctx.valid[13], "<- to mask")
         # print(inputs[13], '<- result')
-
-        return inputs
+        # print(d.data)
+        # print(inputs)
+        # print(valid)
+        # print(torch.tensor([d.data]).shape)
+        return torch.tensor([d.data])
+        # return inputs
 
     @staticmethod
     def backward(ctx, grad_output):
@@ -35,12 +53,17 @@ class AllowValid(torch.autograd.Function):
         # print(grad_output.shape)
         grad_input = grad_output.clone()
         for i in range(input.shape[0]):
-            c = np.zeros(input[i].shape)
-            c[ctx.valid[i]] = 1
+            c = np.ones(input.shape)
+            c[:,ctx.valid] = 0
             d = np.ma.masked_array(grad_input[i], mask = c)
-            d *= 3
-        # print(grad_input.shape)
-        return grad_input, None
+            d = d * -1
+            d = np.ma.exp(d)
+            d = d + 1
+            d = d** -1
+            # grad_input = np.ma.getdata(d)
+        # print(grneruad_input.shape)
+        # return torch.tensor(d.data), None
+        return grad_output, None
 
 
 if __name__ == "__main__":
