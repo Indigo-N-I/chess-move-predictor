@@ -28,10 +28,6 @@ class AllowValid(torch.autograd.Function):
             d = d + 1
             d = np.ma.log(d)
 
-            c = c* -1 + 1
-            d = np.ma.masked_array(d.data, mask = c)
-            d = sig_prime(d)
-
         return torch.tensor([d.data])
         # return inputs
 
@@ -56,7 +52,7 @@ class AllowValid(torch.autograd.Function):
             grad = d.data
             c = c*-1 + 1
             d = np.ma.masked_array(grad, mask = c)
-            d = sig_double(d)
+            d = d/d
             # print(torch.tensor(d.data).shape)
             d = torch.tensor([d.data]) * grad_input
         # print(grneruad_input.shape)
@@ -66,7 +62,7 @@ class AllowValid(torch.autograd.Function):
 
 def sigmoid(x):
     x = x * -1
-    x = np.ma.exp(x)
+    x = np.ma.exp9x)
     x = x + 1
     x = x ** -1
     return x
