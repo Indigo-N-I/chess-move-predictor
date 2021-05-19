@@ -47,7 +47,6 @@ class PieceSelection(nn.Module):
             nn.Linear(64, 64),
             nn.Dropout(.2),
             nn.LeakyReLU(),
-            nn.Dropout(.2),
             nn.Linear(64, 6),
         )
 
@@ -130,7 +129,7 @@ def translate_to_pieces(board, spots):
         # print(spots[i], spots[i]//8, spots[i]%8)
         # print(translate_from_num(spots[i]))
         # print(board[i])
-        a = board[i][-(spots[i]//8+1)][spots[i]%8]
+        a = abs(board[i][-(spots[i]//8+1)][spots[i]%8])
         final_pieces.append(a - 1)
         # print(f"adding {a}")
     return final_pieces
@@ -144,8 +143,8 @@ if __name__ == "__main__":
     print("gathering games")
 
     white, black = get_moves('whoisis', start, end, games, split = True)
-    for i in range(len(black)):
-        black[i][0] *= -1
+    # for i in range(len(black)):
+    #     black[i][0] *= -1
 
     # black.extend(white)
     # print(black[-1])
