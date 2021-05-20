@@ -53,7 +53,7 @@ def create_bitboards(board):
     for row, line in enumerate(board):
         for col, char in enumerate(line):
             if char in piece_translation:
-                # print(row, col/2)
+
                 piece_translation[char][row][col//2] = 1
 
 
@@ -113,11 +113,11 @@ def process_board(iBoard, not_dummy = True):
             for char in line:
                 if char in piece_translation:
                     np_board[index].append(piece_translation[char])
-                # print(np_board)
-        # print(iBoard.legal_moves)
+
+
         np_board = np.array(np_board)
-        # print(np_board)
-        # print(iBoard)
+
+
         '''
 
     return create_bitboards(board)
@@ -126,20 +126,20 @@ def gen_data(game, white: bool, not_dummy = True):
     pgn = io.StringIO(game)
     game = chess.pgn.read_game(pgn)
     board = game.board()
-    # print(board)
+
 # board.legal_moves
     data = []
     save_move = white
     for move in game.mainline_moves():
-        # print(move)
-        # print(board.legal_moves)
+
+
         if save_move:
             legal = []
             for legal_move in board.legal_moves:
                 legal.append(str(legal_move))
 
             data.append([process_board(str(board), not_dummy), legal, str(move)])
-            # print(data)
+            
 
         board.push(move)
         save_move = not save_move
@@ -180,8 +180,7 @@ if __name__ == "__main__":
     games = 2
 
     retreaved_games = get_games('whoisis', start, end, games)
-    # print(type(retreaved_games), type(1))
+
     white, black = split_bw(retreaved_games, 'whoisis')
-    # print(white[0].index('1. '))
+
     data = gen_all(white, black)
-    # print(data)

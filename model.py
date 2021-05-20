@@ -20,14 +20,14 @@ class MaskingLayer(nn.Module):
     #     self.set_mask(mask)
 
     def forward(self, input):
-        # print("doing allowvalid")
+
         b = AllowValid.apply
         a = b(input, self.to_mask)
-        # print(a)
+
         return b(input, self.to_mask)
 
     def set_mask(self, mask):
-        # print('set mask to:', mask)
+
         self.to_mask = mask
 
     def has_mask(self):
@@ -66,10 +66,10 @@ def translate_to_num(location):
     '''
     #A1 -> 0
     #B1 -> 1
-    # print(location)
+
     add = ord(location[0]) - ord('a')
-    # print(add)
-    # print(location, (int(location[1]) - 1)*8 + add  )
+
+
     return (int(location[1]) - 1)*8 + add
     # pass
 
@@ -92,7 +92,7 @@ def piece_select_loss(output, valid, target):
     allowed_starts = [translate_to_num(move[:2]) for move in valid]
     possible = allow_only_valid(output, allowed_starts)
     c = nn.CrossEntropyLoss()
-    # print(possible.size())
+
     return c(possible, torch.tensor([translate_to_num(target[:2])]))
 
 def legal_start(moves, to_set = True):
@@ -115,8 +115,8 @@ def legal_end(moves):
     '''
     legal = []
     for move in moves:
-        # print(moves)
-        # print(move)
+
+
         legal.append(translate_to_num(move[2:4]))
 
     return legal
@@ -125,13 +125,13 @@ def get_piece_moved(board, spots):
     final_pieces = []
     print(len(board), len(spots))
     for i in range(len(board)):
-        # print(spots[i], spots[i]//8, spots[i]%8)
-        # print(translate_from_num(spots[i]))
+
+
         # for bitboard in board[i]:
         #     print(np.array(bitboard))
-        # print(f"adding {a}")
-        # print(len(board[i]))
-        # print(board[i][11][7][7])
+
+
+
         bit_board_vals = [board[i][j][-(spots[i]//8+1)][spots[i]%8] for j in range(len(board[i]))]
         final_pieces.append(bit_board_vals.index(1)%6)
 
@@ -147,22 +147,22 @@ if __name__ == "__main__":
     print("gathering games")
 
     white, black = get_moves('whoisis', start, end, games, split = True)
-    # print(black)
+
     # black.extend(white)
-    # print(black[-1])
+
     print("transorming data")
     train, test = train_test_split(black)
-    # print(train[0])
+
 
     x = [data[0] for data in train]
     valid = [legal_start(data[1]) for data in train]
-    # print(translate_to_pieces(train[0], train[2]))
+
     # target = torch.tensor(legal_end([data[2] for data in train]))
-    # print([data[2] for data in train])
+
     # counts = translate_to_pieces([data[0] for data in train], legal_start([data[2] for data in train], False))
     print(len(train))
     # get_piece_moved([data[0] for data in train], legal_start([data[2] for data in train], False))
-    # print(Counter(counts))
+
 
     target = torch.tensor(get_piece_moved([data[0] for data in train], legal_start([data[2] for data in train], False))).type(torch.LongTensor)
 
@@ -171,15 +171,15 @@ if __name__ == "__main__":
     # target_test = torch.tensor(legal_end([data[2] for data in test]))
     target_test = torch.tensor(get_piece_moved([data[0] for data in test], legal_start([data[2] for data in test], False))).type(torch.LongTensor)
     print(target_test)
-    # print(torch.tensor(x).shape)
-    # print(print(len(valid)))
+
+
 
     print("creating network")
     test = PieceSelection()
     criterion = nn.CrossEntropyLoss()
     lr = .01
     opt = optim.SGD(test.parameters(), lr = .01)
-    # print(test)
+
 
     # cwd = os.getcwd()
     # torch.save(test.state_dict(), cwd)
@@ -189,23 +189,23 @@ if __name__ == "__main__":
         running_loss = 0.0
         opt = optim.SGD(test.parameters(), lr = lr*(.9**epoch),weight_decay=1e-5)
         for index, data in enumerate(x):
-            # print(valid[index])
+
             opt.zero_grad()
             output = test(torch.tensor([data]).type(torch.FloatTensor), valid[index])
-            # print(torch.tensor(output).shape, output)
-            # print(target.shape, output.shape)
-            # print(target, index)
-            # print(output, torch.tensor([target[index]]))
+
+
+
+
             loss = criterion(output, torch.tensor([target[index]]))
             loss.backward()
             opt.step()
 
             running_loss += loss.item()
-            if index % 2000 == 1999:    # print every 2000 mini-batches
+            if index % 2000 == 1999:
                 print('[%d, %5d] loss: %.3f' %
                       (epoch + 1, index + 1, running_loss / 2000))
                 running_loss = 0.0
-        # print(f"epoch {epoch} results, index max: {index}")
+
         correct = 0
         quest = 0
         test_loss = 0
@@ -231,7 +231,7 @@ if __name__ == "__main__":
     print(f"Correct Precent train: {correct/quest}")
     # cwd = os.getcwd()
     # torch.save(test.state_dict(), cwd)
-            # print(loss.item())
+
 
             # running_loss += loss.item()
             # if
@@ -245,18 +245,16 @@ if __name__ == "__main__":
 
     # for k in range(64):
     #     print(translate_from_num(k))
-    # print(black[0][1])
-    # print(np.transpose((black[5][0]>0).nonzero()), '\n', black[5][0])
+
+
     # device = 'cuda' if torch.cuda.is_available() else 'cpu'
     #
-    # print('Using {} device'.format(device))
+
     # y = torch.rand(1, 8, 8, device=device)
 
     # model = PieceSelection().to(device)
     # X = torch.tensor([black[0][0]]).type(torch.FloatTensor)
-    # print(X.shape)
+
     # logits = model(X)
     # pred_probab = nn.Softmax(dim=1)(logits)
     # y_pred = pred_probab.argmax(1)
-    # print(f"Predicted class: {y_pred}")
-    # print(pred_probab)
