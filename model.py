@@ -45,7 +45,6 @@ class PieceSelection(nn.Module):
         self.flatten = nn.Flatten()
         self.linear_relu_stack = nn.Sequential(
             nn.Linear(64, 64),
-            nn.Dropout(.2),
             nn.LeakyReLU(),
             nn.Linear(64, 6),
         )
@@ -139,13 +138,13 @@ if __name__ == "__main__":
 
     start = datetime(2018, 12, 8)
     end = datetime(2021, 3, 7)
-    games = 300
+    games = 20
     print("gathering games")
 
     white, black = get_moves('whoisis', start, end, games, split = True)
     for i in range(len(black)):
         black[i][0] *= -1
-        
+
     # black.extend(white)
     # print(black[-1])
     print("transorming data")

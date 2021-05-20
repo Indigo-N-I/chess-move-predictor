@@ -8,6 +8,69 @@ import io
 import numpy as np
 from get_games import get_games, split_bw
 
+def get_bitboard():
+    return [[0]*8,
+                [0]*8,
+                [0]*8,
+                [0]*8,
+                [0]*8,
+                [0]*8,
+                [0]*8,
+                [0]*8]
+
+def create_bitboards(board):
+    #black pieces
+    b_king = get_bitboard()
+    b_queen = get_bitboard()
+    b_bish = get_bitboard()
+    b_horse = get_bitboard()
+    b_rook = get_bitboard()
+    b_pawn = get_bitboard()
+
+    #white pieces
+    w_king = get_bitboard()
+    w_queen = get_bitboard()
+    w_bish = get_bitboard()
+    w_horse = get_bitboard()
+    w_rook = get_bitboard()
+    w_pawn = get_bitboard()
+
+    piece_translation = {
+        'p': b_pawn,
+        'n': b_horse,
+        'b': b_bish,
+        'r': b_rook,
+        'q': b_queen,
+        'k': b_king,
+        'P': w_king,
+        'N': w_horse,
+        'B': w_bish,
+        'R': w_rook,
+        'Q': w_queen,
+        'K': w_king
+    }
+
+    for row, line in enumerate(board):
+        for col, char in enumerate(line):
+            if char in piece_translation:
+                # print(row, col/2)
+                piece_translation[char][row][col//2] = 1
+    return [
+        b_king,
+        b_queen,
+        b_bish,
+        b_horse,
+        b_rook,
+        b_pawn,
+        w_king,
+        w_queen,
+        w_bish,
+        w_horse,
+        w_rook,
+        w_pawn
+    ]
+
+# redfine to bitboards
 def process_board(iBoard, not_dummy = True):
     '''
     pawn = 1
@@ -21,33 +84,41 @@ def process_board(iBoard, not_dummy = True):
     '''
 
     board = io.StringIO(iBoard)
-    np_board = []
-    piece_translation = {
-        '.': 0,
-        'p': -1,
-        'n': -2 if not_dummy else -1,
-        'b': -3 if not_dummy else -1,
-        'r': -4 if not_dummy else -1,
-        'q': -5 if not_dummy else -1,
-        'k': -6 if not_dummy else -1,
-        'P': 1 if not_dummy else 1,
-        'N': 2 if not_dummy else 1,
-        'B': 3 if not_dummy else 1,
-        'R': 4 if not_dummy else 1,
-        'Q': 5 if not_dummy else 1,
-        'K': 6 if not_dummy else 1
-    }
-    for index, line in enumerate(board):
-        np_board.append([])
-        for char in line:
-            if char in piece_translation:
-                np_board[index].append(piece_translation[char])
-            # print(np_board)
-    # print(iBoard.legal_moves)
-    np_board = np.array(np_board)
-    # print(np_board)
-    # print(iBoard)
-    return np_board
+
+    #just to collapse
+    if 0:
+        pass
+        '''
+        np_board = []
+        piece_translation = {
+            '.': 0,
+            'p': -1,
+            'n': -2 if not_dummy else -1,
+            'b': -3 if not_dummy else -1,
+            'r': -4 if not_dummy else -1,
+            'q': -5 if not_dummy else -1,
+            'k': -6 if not_dummy else -1,
+            'P': 1 if not_dummy else 1,
+            'N': 2 if not_dummy else 1,
+            'B': 3 if not_dummy else 1,
+            'R': 4 if not_dummy else 1,
+            'Q': 5 if not_dummy else 1,
+            'K': 6 if not_dummy else 1
+        }
+
+        for index, line in enumerate(board):
+            np_board.append([])
+            for char in line:
+                if char in piece_translation:
+                    np_board[index].append(piece_translation[char])
+                # print(np_board)
+        # print(iBoard.legal_moves)
+        np_board = np.array(np_board)
+        # print(np_board)
+        # print(iBoard)
+        '''
+
+    return create_bitboards(board)
 
 def gen_data(game, white: bool, not_dummy = True):
     pgn = io.StringIO(game)
