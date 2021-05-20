@@ -55,6 +55,8 @@ def create_bitboards(board):
             if char in piece_translation:
                 # print(row, col/2)
                 piece_translation[char][row][col//2] = 1
+
+
     return [
         b_king,
         b_queen,
@@ -137,6 +139,7 @@ def gen_data(game, white: bool, not_dummy = True):
                 legal.append(str(legal_move))
 
             data.append([process_board(str(board), not_dummy), legal, str(move)])
+            # print(data)
 
         board.push(move)
         save_move = not save_move

@@ -50,7 +50,7 @@ class PieceSelection(nn.Module):
         )
 
     def forward(self, x, valid = ''):
-        # print(x)
+        print(x.shape)
         x = self.flatten(x)
         self.mask.set_mask(valid)
         logits = self.linear_relu_stack(x)
@@ -121,16 +121,21 @@ def legal_end(moves):
 
     return legal
 
-def translate_to_pieces(board, spots):
+def get_piece_moved(board, spots):
     final_pieces = []
     print(len(board), len(spots))
     for i in range(len(board)):
         # print(spots[i], spots[i]//8, spots[i]%8)
         # print(translate_from_num(spots[i]))
-        # print(board[i])
-        a = abs(board[i][-(spots[i]//8+1)][spots[i]%8])
-        final_pieces.append(a - 1)
+        # for bitboard in board[i]:
+        #     print(np.array(bitboard))
         # print(f"adding {a}")
+        # print(len(board[i]))
+        # print(board[i][11][7][7])
+        bit_board_vals = [board[i][j][-(spots[i]//8+1)][spots[i]%8] for j in range(len(board[i]))]
+        final_pieces.append(bit_board_vals.index(1)%6)
+
+
     return final_pieces
 
 
@@ -142,9 +147,7 @@ if __name__ == "__main__":
     print("gathering games")
 
     white, black = get_moves('whoisis', start, end, games, split = True)
-    for i in range(len(black)):
-        black[i][0] *= -1
-
+    # print(black)
     # black.extend(white)
     # print(black[-1])
     print("transorming data")
@@ -155,16 +158,18 @@ if __name__ == "__main__":
     valid = [legal_start(data[1]) for data in train]
     # print(translate_to_pieces(train[0], train[2]))
     # target = torch.tensor(legal_end([data[2] for data in train]))
-    counts = translate_to_pieces([data[0] for data in train], legal_start([data[2] for data in train], False))
+    # print([data[2] for data in train])
+    # counts = translate_to_pieces([data[0] for data in train], legal_start([data[2] for data in train], False))
+    print(len(train))
+    # get_piece_moved([data[0] for data in train], legal_start([data[2] for data in train], False))
+    # print(Counter(counts))
 
-    print(Counter(counts))
-
-    target = torch.tensor(translate_to_pieces([data[0] for data in train], legal_start([data[2] for data in train], False))).type(torch.LongTensor)
+    target = torch.tensor(get_piece_moved([data[0] for data in train], legal_start([data[2] for data in train], False))).type(torch.LongTensor)
 
     x_test = [data[0] for data in test]
     valid_test = [legal_start(data[1]) for data in test]
     # target_test = torch.tensor(legal_end([data[2] for data in test]))
-    target_test = torch.tensor(translate_to_pieces([data[0] for data in test], legal_start([data[2] for data in test], False))).type(torch.LongTensor)
+    target_test = torch.tensor(get_piece_moved([data[0] for data in test], legal_start([data[2] for data in test], False))).type(torch.LongTensor)
     print(target_test)
     # print(torch.tensor(x).shape)
     # print(print(len(valid)))
