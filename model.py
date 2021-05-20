@@ -143,9 +143,9 @@ if __name__ == "__main__":
     print("gathering games")
 
     white, black = get_moves('whoisis', start, end, games, split = True)
-    # for i in range(len(black)):
-    #     black[i][0] *= -1
-
+    for i in range(len(black)):
+        black[i][0] *= -1
+        
     # black.extend(white)
     # print(black[-1])
     print("transorming data")
