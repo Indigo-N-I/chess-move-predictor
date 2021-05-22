@@ -10,6 +10,8 @@ import torch.optim as optim
 from functions import AllowValid
 from sklearn.model_selection import train_test_split
 from collections import Counter
+from se_module import SELayer
+
 
 class MaskingLayer(nn.Module):
     def __init__(self):
@@ -43,17 +45,17 @@ class PieceSelection(nn.Module):
         self.mask = MaskingLayer()
 
         self.flatten = nn.Flatten()
-        self.linear_relu_stack = nn.Sequential(
-            nn.Linear(64, 64),
-            nn.LeakyReLU(),
-            nn.Linear(64, 6),
-        )
+        self.relu = nn.ReLU(6)
+        self.conv = nn.Conv2d(12,128,kernel_size = 3, padding = 1)
+        self.SE = SELayer(128, 32)
 
     def forward(self, x, valid = ''):
-        print(x.shape)
+        x = self.conv(x)
+        x = self.SE(x)
+        # print(x.shape)
         x = self.flatten(x)
-        self.mask.set_mask(valid)
-        logits = self.linear_relu_stack(x)
+        # self.mask.set_mask(valid)
+        logits = self.relu(x)
         return logits
 
 # try this:
@@ -143,7 +145,7 @@ if __name__ == "__main__":
 
     start = datetime(2018, 12, 8)
     end = datetime(2021, 3, 7)
-    games = 20
+    games = 300
     print("gathering games")
 
     white, black = get_moves('whoisis', start, end, games, split = True)
@@ -194,7 +196,7 @@ if __name__ == "__main__":
             output = test(torch.tensor([data]).type(torch.FloatTensor), valid[index])
 
 
-
+            # print(output)
 
             loss = criterion(output, torch.tensor([target[index]]))
             loss.backward()
