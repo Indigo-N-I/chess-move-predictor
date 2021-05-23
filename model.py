@@ -12,6 +12,17 @@ from sklearn.model_selection import train_test_split
 from collections import Counter
 from se_module import SELayer
 
+FILTERS = 128
+BLOCKS = 10
+
+torch.autograd.set_detect_anomaly(True)
+
+print(torch.cuda.is_available())
+if torch.cuda.is_available():
+  dev = "cuda:0"
+else:
+  dev = "cpu"
+print(f"using {dev}")
 
 class MaskingLayer(nn.Module):
     def __init__(self):
@@ -46,12 +57,34 @@ class PieceSelection(nn.Module):
 
         self.flatten = nn.Flatten()
         self.relu = nn.ReLU(6)
-        self.conv = nn.Conv2d(12,128,kernel_size = 3, padding = 1)
-        self.SE = SELayer(128, 32)
+        self.conv = nn.Conv2d(12,FILTERS,kernel_size = 3, padding = 1)
+        self.SE1 = SELayer(FILTERS, 32)
+        self.SE2 = SELayer(FILTERS, 32)
+        self.SE3 = SELayer(FILTERS, 32)
+        self.SE4 = SELayer(FILTERS, 32)
+        self.SE5 = SELayer(FILTERS, 32)
+        self.SE6 = SELayer(FILTERS, 32)
+        self.SE7 = SELayer(FILTERS, 32)
+        self.SE8 = SELayer(FILTERS, 32)
+        self.SE9 = SELayer(FILTERS, 32)
+        self.SE10 = SELayer(FILTERS, 32)
+
 
     def forward(self, x, valid = ''):
         x = self.conv(x)
-        x = self.SE(x)
+        x = self.SE1(x) + self.SE2(x)
+        # x2 = self.SE2(x)
+        # x3 = self.SE3(x)
+        # x4 = self.SE4(x)
+        # x5 = self.SE5(x)
+        # x6 = self.SE6(x)
+        # x7 = self.SE7(x)
+        # x8 = self.SE8(x)
+        # x9 = self.SE9(x)
+        # x10 = self.SE10(x)
+
+        # x = x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10
+
         # print(x.shape)
         x = self.flatten(x)
         # self.mask.set_mask(valid)
