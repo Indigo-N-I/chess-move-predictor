@@ -15,15 +15,6 @@ from se_module import SELayer
 FILTERS = 128
 BLOCKS = 10
 
-torch.autograd.set_detect_anomaly(True)
-
-print(torch.cuda.is_available())
-if torch.cuda.is_available():
-  dev = "cuda:0"
-else:
-  dev = "cpu"
-print(f"using {dev}")
-
 class MaskingLayer(nn.Module):
     def __init__(self):
         super(MaskingLayer, self).__init__()
@@ -175,6 +166,14 @@ def get_piece_moved(board, spots):
 
 
 if __name__ == "__main__":
+    torch.autograd.set_detect_anomaly(True)
+
+    print(torch.cuda.is_available())
+    if torch.cuda.is_available():
+      dev = "cuda:0"
+    else:
+      dev = "cpu"
+    print(f"using {dev}")
 
     start = datetime(2018, 12, 8)
     end = datetime(2021, 3, 7)
