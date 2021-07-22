@@ -5,6 +5,7 @@ import os
 from sklearn.model_selection import train_test_split
 from model import get_piece_moved, legal_start
 from sklearn.linear_model import PassiveAggressiveClassifier
+from sklearn.metrics import accuracy_score, confusion_matrix
 
 from personal_PAC import PAC
 
@@ -12,7 +13,7 @@ if __name__ == "__main__":
 
     start = datetime(2018, 12, 8)
     end = datetime(2021, 7, 7)
-    games = 20
+    games = 500
     print("gathering games")
 
     white, black = get_moves('whoisis', start, end, games, split = True)
@@ -20,7 +21,8 @@ if __name__ == "__main__":
     # black.extend(white)
 
     print("transorming data")
-    train, test = train_test_split(black)
+    train = black[:-len(black)//9]
+    test = black[len(black)//9:]
     x_train = np.array([data[0] for data in train])
     x_test = np.array([data[0] for data in test])
     y_train = get_piece_moved([data[0] for data in train], legal_start([data[2] for data in train], False))
@@ -28,3 +30,9 @@ if __name__ == "__main__":
 
     pac = PAC()
     pac.fit(x_train, y_train)
+
+    ans = pac.predict(x_test)
+    score = accuracy_score(y_test, ans)
+    con_mat = confusion_matrix(y_test,ans, labels=list(set(y_test)))
+    print(score)
+    print(con_mat)

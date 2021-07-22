@@ -139,7 +139,7 @@ def gen_data(game, white: bool, not_dummy = True):
                 legal.append(str(legal_move))
 
             data.append([process_board(str(board), not_dummy), legal, str(move)])
-            
+
 
         board.push(move)
         save_move = not save_move
@@ -171,7 +171,7 @@ def get_moves(name, start, end, games, split = True, not_dummy = True):
 
     data = gen_all(white, black, not_dummy)
 
-    return data
+    return data.reverse()
 
 if __name__ == "__main__":
 

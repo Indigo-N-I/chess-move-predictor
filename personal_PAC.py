@@ -18,8 +18,11 @@ from sklearn.preprocessing import normalize
 '''
 class PAC():
 
-    def __init__(self, cap_loss = 1):
+    def __init__(self, cap_loss = .65, decay = .001, decay_increase = .0001, loss_decay = False):
         self.max_loss = cap_loss
+        self.decay = .001
+        self.loss_decay = loss_decay
+        self.decay_speed = decay_increase
 
     def fit(self, x_train, y_train):
         # flatten x_train
@@ -30,7 +33,7 @@ class PAC():
         self.classes = {}
         classes = set(y_train)
         # assert len(classes) == 2, "more than two classes"
-        val = 1
+        val = 0
         for c in classes:
             self.classes[c] = val
             val += 1
@@ -49,26 +52,32 @@ class PAC():
             # print(predict)
             y = np.zeros((predict.shape[0], 1))
             y[self.classes[y_train[index]]-1] = 1
-
+            # print(predict)
             if not max(predict) != predict[self.classes[y_train[index]]-1]:
                 error = max(predict) - 1
                 loss = max(0, 1-error)
-                loss = min(self.max_loss, loss)
+                if self.loss_decay:
+                    loss *= (1-self.decay)
+                    self.decay += self.decay_speed
+                else:
+                    loss = min(self.max_loss, loss)
+                τ = error/(2*np.linalg.norm(data_norm))[0]
+                print(τ)
                 y[np.argmax(predict)] =  -1
-                print(data_norm.shape, (y.T*loss).shape)
-                print(data_norm.ndim, (y.T*loss).ndim)
-                self.weights = self.weights + np.cross(data_norm, y.T * loss)
+                # print(data_norm.shape, (y.T*loss).shape)
+                # print(data_norm.ndim, (y.T*loss).ndim)
+                self.weights = self.weights + y.T * loss *data_norm * τ
 
     def predict(self, x_test):
+        x_test = np.array([b.flatten() for b in x_test])
         predictions = []
         for data_point in x_test:
-            data_norm = normalize(data_point)
+            data_norm = np.array(data_point).reshape((data_point.shape[0],1))
+            # print(data_norm* self.weights)
+            predictions.append(np.argmax(np.dot(self.weights.T, data_norm)))
 
-            predictions.append(np.sum(data_norm* self.weights))
-
-        predictions = [x if x != 0 else 1 for x in predictions]
+        # predictions = [x if x != 0 else 1 for x in predictions]
         predictions = np.array(predictions)
-        predictions /= np.abs(predictions)
-
+        # print(predictions)
 
         return [self.class_rev[int(pred)] for pred in predictions]
