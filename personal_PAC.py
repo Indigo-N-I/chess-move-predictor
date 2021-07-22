@@ -18,9 +18,11 @@ from sklearn.preprocessing import normalize
 '''
 class PAC():
 
-    def __init__(self, cap_loss = .65, decay = .001, decay_increase = .0001, loss_decay = False):
+    def __init__(self, cap_loss = .65, decay = .999, decay_increase = .0001, loss_decay = False):
         self.max_loss = cap_loss
-        self.decay = .001
+        self.max_decay = decay
+        self.decay_reset = .9
+        self.decay = decay
         self.loss_decay = loss_decay
         self.decay_speed = decay_increase
 
@@ -57,9 +59,12 @@ class PAC():
                 error = max(predict) - 1
                 loss = max(0, 1-error)
                 if self.loss_decay:
-                    loss *= (1-self.decay)
-                    self.decay += self.decay_speed
-                else:
+                    loss *= self.decay
+                    self.decay *= (1-self.decay_speed)
+                    if self.decay <= .2:
+                        self.decay = self.max_decay * self.decay_reset
+                        self.decay_reset *= self.decay_reset
+                elif self.cap_loss:
                     loss = min(self.max_loss, loss)
                 # τ = error/(2*np.linalg.norm(data_norm))
                 # τ = 1
