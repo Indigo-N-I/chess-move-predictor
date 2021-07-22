@@ -13,7 +13,7 @@ if __name__ == "__main__":
 
     start = datetime(2018, 12, 8)
     end = datetime(2021, 7, 7)
-    games = 500
+    games = 10
     print("gathering games")
 
     white, black = get_moves('whoisis', start, end, games, split = True)
