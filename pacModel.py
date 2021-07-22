@@ -13,7 +13,7 @@ if __name__ == "__main__":
 
     start = datetime(2018, 12, 8)
     end = datetime(2021, 7, 7)
-    games = 10
+    games = 500
     print("gathering games")
 
     white, black = get_moves('whoisis', start, end, games, split = True)
@@ -28,7 +28,8 @@ if __name__ == "__main__":
     y_train = get_piece_moved([data[0] for data in train], legal_start([data[2] for data in train], False))
     y_test = get_piece_moved([data[0] for data in test], legal_start([data[2] for data in test], False))
 
-    pac = PAC()
+    pac = PAC(loss_decay = True)
+    #def __init__(self, cap_loss = .65, decay = .001, decay_increase = .0001, loss_decay = False):
     pac.fit(x_train, y_train)
 
     ans = pac.predict(x_test)

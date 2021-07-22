@@ -61,13 +61,13 @@ class PAC():
                     self.decay += self.decay_speed
                 else:
                     loss = min(self.max_loss, loss)
-                τ = error/(2*np.linalg.norm(data_norm))
-                τ = τ[0]*100
-                print(τ)
+                # τ = error/(2*np.linalg.norm(data_norm))
+                # τ = 1
+                # print(τ)
                 y[np.argmax(predict)] =  -1
                 # print(data_norm.shape, (y.T*loss).shape)
                 # print(data_norm.ndim, (y.T*loss).ndim)
-                self.weights = self.weights + y.T * loss *data_norm * τ
+                self.weights = self.weights + y.T * loss *data_norm #* τ
 
     def predict(self, x_test):
         x_test = np.array([b.flatten() for b in x_test])
