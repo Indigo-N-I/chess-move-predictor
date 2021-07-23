@@ -26,7 +26,7 @@ class PAC():
         self.loss_decay = loss_decay
         self.decay_speed = decay_increase
 
-    def fit(self, x_train, y_train):
+    def fit(self, x_train, y_train, restrict = None):
         # flatten x_train
         x_train = np.array([b.flatten() for b in x_train])
         # get classes
@@ -55,6 +55,16 @@ class PAC():
             y = np.zeros((predict.shape[0], 1))
             y[self.classes[y_train[index]]-1] = 1
             # print(predict)
+
+            # restrict the possible predictions
+            if restrict:
+                # print(self.classes, self.class_rev)
+                non_zeroed = [self.class_rev[a] for a in restrict[index]]
+                for i in range(len(predict)):
+                    if i not in non_zeroed:
+                        predict[i] = np.NINF
+
+
             if not max(predict) != predict[self.classes[y_train[index]]-1]:
                 error = max(predict) - 1
                 loss = max(0, 1-error)
@@ -64,7 +74,7 @@ class PAC():
                     if self.decay <= .2:
                         self.decay = self.max_decay * self.decay_reset
                         self.decay_reset *= self.decay_reset
-                elif self.cap_loss:
+                elif self.max_loss:
                     loss = min(self.max_loss, loss)
                 # τ = error/(2*np.linalg.norm(data_norm))
                 # τ = 1
@@ -74,13 +84,19 @@ class PAC():
                 # print(data_norm.ndim, (y.T*loss).ndim)
                 self.weights = self.weights + y.T * loss *data_norm #* τ
 
-    def predict(self, x_test):
+    def predict(self, x_test, restrict = None):
         x_test = np.array([b.flatten() for b in x_test])
         predictions = []
-        for data_point in x_test:
+        for index, data_point in enumerate(x_test):
             data_norm = np.array(data_point).reshape((data_point.shape[0],1))
             # print(data_norm* self.weights)
-            predictions.append(np.argmax(np.dot(self.weights.T, data_norm)))
+            predict = np.dot(self.weights.T, data_norm)
+            if restrict:
+                non_zeroed = [self.class_rev[a] for a in restrict[index]]
+                for i in range(len(predict)):
+                    if i not in non_zeroed:
+                        predict[i] = np.NINF
+            predictions.append(np.argmax(predict))
 
         # predictions = [x if x != 0 else 1 for x in predictions]
         predictions = np.array(predictions)
