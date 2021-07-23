@@ -42,7 +42,7 @@ def create_bitboards(board):
         'r': b_rook,
         'q': b_queen,
         'k': b_king,
-        'P': w_king,
+        'P': w_pawn,
         'N': w_horse,
         'B': w_bish,
         'R': w_rook,
