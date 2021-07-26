@@ -6,6 +6,8 @@ from sklearn.model_selection import train_test_split
 from model import get_piece_moved, legal_start
 from sklearn.linear_model import PassiveAggressiveClassifier
 from sklearn.metrics import accuracy_score, confusion_matrix
+from scipy.linalg import svd
+from sklearn.decomposition import TruncatedSVD
 
 from personal_PAC import PAC
 TESTMODEL = True
@@ -52,11 +54,27 @@ if __name__ == "__main__":
     # black.extend(white)
 
     if TESTMODEL:
-        print("transorming data")
+        print("transforming data")
+        boards = np.array([data[0] for data in black])
         train = black[:-len(black)//9]
+        # define a matrix
+        # print(np.array(train))
         test = black[len(black)//9:]
-        x_train = np.array([data[0] for data in train])
-        x_test = np.array([data[0] for data in test])
+
+        flattened_train = np.array([b.flatten() for b in boards])
+        # print(np.array(x_train))
+        # U, s, VT = svd(np.array(flattened_train))
+        # print(U)
+        # print(s)
+        # print(VT)
+
+        svd = TruncatedSVD(n_components=10)
+        svd.fit(flattened_train)
+        result = svd.transform(flattened_train)
+        x_train = np.array(result[:-len(black)//9])
+
+
+        x_train = np.array(result[len(black)//9:])
         y_train = get_piece_moved([data[0] for data in train], legal_start([data[2] for data in train], False))
         y_test = get_piece_moved([data[0] for data in test], legal_start([data[2] for data in test], False))
         legal_train = []
