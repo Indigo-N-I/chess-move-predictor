@@ -68,13 +68,13 @@ if __name__ == "__main__":
         # print(s)
         # print(VT)
 
-        svd = TruncatedSVD(n_components=10)
+        svd = TruncatedSVD(n_components=100)
         svd.fit(flattened_train)
         result = svd.transform(flattened_train)
         x_train = np.array(result[:-len(black)//9])
 
 
-        x_train = np.array(result[len(black)//9:])
+        x_test = np.array(result[len(black)//9:])
         y_train = get_piece_moved([data[0] for data in train], legal_start([data[2] for data in train], False))
         y_test = get_piece_moved([data[0] for data in test], legal_start([data[2] for data in test], False))
         legal_train = []
