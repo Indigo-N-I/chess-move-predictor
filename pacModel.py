@@ -66,12 +66,13 @@ if __name__ == "__main__":
         for t in test:
             legal_test.append(legal_pieces(t[1],t[0]))
 
-        pac = PAC(cap_loss = .65)
+        pac = PAC(cap_loss = .85)
         #def __init__(self, cap_loss = .65, decay = .001, decay_increase = .0001, loss_decay = False):
         pac.fit(x_train, y_train, legal_train)
 
         ans = pac.predict(x_test, legal_test)
         score = accuracy_score(y_test, ans)
+        # print(set(y_test))
         con_mat = confusion_matrix(y_test,ans, labels=list(set(y_test)))
         print("With restrictions")
         print(score)
@@ -82,5 +83,21 @@ if __name__ == "__main__":
         score = accuracy_score(y_test, ans)
         con_mat = confusion_matrix(y_test,ans, labels=list(set(y_test)))
         print("no restrictions")
+        print(score)
+        print(con_mat)
+
+        pac.fit(x_train, y_train, legal_train)
+        ans = pac.predict(x_test)
+        score = accuracy_score(y_test, ans)
+        con_mat = confusion_matrix(y_test,ans, labels=list(set(y_test)))
+        print("Training restrictions")
+        print(score)
+        print(con_mat)
+
+        pac.fit(x_train, y_train)
+        ans = pac.predict(x_test, legal_test)
+        score = accuracy_score(y_test, ans)
+        con_mat = confusion_matrix(y_test,ans, labels=list(set(y_test)))
+        print("Test restrictions")
         print(score)
         print(con_mat)

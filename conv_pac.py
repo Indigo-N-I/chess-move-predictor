@@ -16,7 +16,31 @@ from sklearn.preprocessing import normalize
 8. update w_n = w + y*L*d
 
 '''
-class PAC():
+class Conv():
+    def __init__(self,input_shape, output_shape, max_move = .5):
+        self.max_move = .5
+        self.input_shape = input_shape
+        self.output_shape = output_shape
+
+        self.conv_shape = list(self.input_shape)
+        # print(self.conv_shape)
+        for i in range(-1, -len(self.output_shape) - 1, -1):
+            self.conv_shape[i] -= self.output_shape[i]
+            # print(self.conv_shape)
+
+        # print(self.conv_shape)
+        self.values = np.random.random_sample(tuple(self.conv_shape))
+
+    def transform(self, input):
+        assert input.shape == self.input_shape
+        output = np.zeros(self.output_shape)
+
+        for a in range(len(self.input_shape)):
+
+
+
+
+class Conv_PAC():
 
     def __init__(self, cap_loss = .65, decay = .999, decay_increase = .0001, loss_decay = False):
         self.max_loss = cap_loss
@@ -108,3 +132,6 @@ class PAC():
         # print(predictions)
 
         return [self.class_rev[int(pred)] for pred in predictions]
+
+if __name__ == "__main__":
+    a = Conv((7,5,5), (2,2))
