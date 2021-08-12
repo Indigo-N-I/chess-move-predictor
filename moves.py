@@ -122,6 +122,38 @@ def process_board(iBoard, not_dummy = True):
 
     return create_bitboards(board)
 
+def gen_all_next_moves(game, white: bool, not_dummy = True):
+    # print(game)
+    pgn = io.StringIO(game)
+    game = chess.pgn.read_game(pgn)
+    board = game.board()
+
+    # board.legal_moves
+    data = []
+    save_move = white
+    # a = 1 if white else 0
+    for move in game.mainline_moves():
+
+
+        if save_move:
+            data = []
+            for legal_move in board.legal_moves:
+                dummy_board = board.copy()
+                dummy_board.push(legal_move)
+                if str(legal_move) != str(move):
+                    data.append([process_board(str(dummy_board), not_dummy),0])
+                else:
+                    data.append([process_board(str(dummy_board), not_dummy),1])
+            # print(to_move)
+            # bitboard = process_board(str(board), not_dummy)
+            # bitboard.append(to_move)
+            # data.append([bitboard, legal, str(move)])
+
+        board.push(move)
+        save_move = not save_move
+
+    return data
+
 def gen_data(game, white: bool, not_dummy = True):
     pgn = io.StringIO(game)
     game = chess.pgn.read_game(pgn)
@@ -165,6 +197,18 @@ def gen_all(white_games, black_games, not_dummy = True):
 
     return data
 
+def gen_all_game_moves(white_games, black_games, not_dummy = True):
+    data = []
+    for game in white_games:
+        data.extend(gen_all_next_moves(game, True, not_dummy))
+    # print(gen_games(white_games, True, not_dummy))
+    # print("data")
+    for game in black_games:
+        data.extend(gen_all_next_moves(game, False, not_dummy))
+
+    return data
+
+
 def gen_games(games, white, not_dummy = True):
     data = []
 
@@ -186,6 +230,19 @@ def get_moves(name, start, end, games, split = True, not_dummy = True):
     data = gen_all(white, black, not_dummy)
     # print(data[0])
     # print("data is", data)
+    return data
+
+def get_all_moves(name, start, end, games, split = True, not_dummy = True):
+    print("getting all moves")
+    retreaved_games = get_games('whoisis', start, end, games)
+
+    white, black = split_bw(retreaved_games, 'whoisis')
+
+    if split:
+        # print(gen_games(black, False, not_dummy)[0])
+        return gen_games(white, True, not_dummy), gen_games(black, False, not_dummy)
+    # print(white)
+    data = gen_all_game_moves(white, black, not_dummy)
     return data
 
 if __name__ == "__main__":
