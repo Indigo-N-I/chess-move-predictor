@@ -1,4 +1,4 @@
-from moves import get_moves, get_all_moves
+from moves import get_moves
 from datetime import datetime
 import numpy as np
 import os
@@ -47,9 +47,8 @@ class PieceSelection(nn.Module):
         self.mask = MaskingLayer()
 
         self.flatten = nn.Flatten()
-        self.relu = nn.ReLU()
-        self.linear = nn.Linear(8192, 1)
-        self.conv = nn.Conv2d(12,FILTERS,kernel_size = 3, padding = 1)
+        self.relu = nn.ReLU(6)
+        self.conv = nn.Conv2d(13,FILTERS,kernel_size = 3, padding = 1)
         self.SE1 = SELayer(FILTERS, 32)
         self.SE2 = SELayer(FILTERS, 32)
         self.SE3 = SELayer(FILTERS, 32)
@@ -80,11 +79,7 @@ class PieceSelection(nn.Module):
         # print(x.shape)
         x = self.flatten(x)
         # self.mask.set_mask(valid)
-        # print("shape of x is:", x.shape)
         logits = self.relu(x)
-        # print("shape of logits is:", logits.shape)
-        logits = self.linear(logits)
-        # print("shape of logits is:", logits.shape)
         return logits
 
 # try this:
@@ -182,30 +177,46 @@ if __name__ == "__main__":
 
     start = datetime(2018, 12, 8)
     end = datetime(2021, 3, 7)
-    games = 1500
+    games = 150
     print("gathering games")
 
-    games = get_all_moves('whoisis', start, end, games, split = False)
-
+    games = get_moves('whoisis', start, end, games, split = False)
+    # print(games)
+    # black.extend(white)
+    # print(black)
     print("transorming data")
     train, test = train_test_split(games)
+    # print(train)
 
     x = [data[0] for data in train]
-    y = [data[1] for data in train]
-    print(f"Total amount of 1's train: {sum(y)}/{len(y)}")
+    valid = [legal_start(data[1]) for data in train]
 
+    # target = torch.tensor(legal_end([data[2] for data in train]))
+
+    # counts = translate_to_pieces([data[0] for data in train], legal_start([data[2] for data in train], False))
     print(len(train))
+    # get_piece_moved([data[0] for data in train], legal_start([data[2] for data in train], False))
+
+    # print(black[0])
+    target = torch.tensor(get_piece_moved([data[0] for data in train], legal_start([data[2] for data in train], False))).type(torch.LongTensor)
 
     x_test = [data[0] for data in test]
-    y_test = [data[1] for data in test]
-    print(f"Total amount of 1's test: {sum(y_test)}/{len(y_test)}")
+    valid_test = [legal_start(data[1]) for data in test]
+    # target_test = torch.tensor(legal_end([data[2] for data in test]))
+    target_test = torch.tensor(get_piece_moved([data[0] for data in test], legal_start([data[2] for data in test], False))).type(torch.LongTensor)
+    print(target_test)
+
 
 
     print("creating network")
     test = PieceSelection()
-    criterion = nn.MSELoss()
+    criterion = nn.CrossEntropyLoss()
     lr = .01
     opt = optim.SGD(test.parameters(), lr = .01)
+
+
+    # cwd = os.getcwd()
+    # torch.save(test.state_dict(), cwd)
 
     print("training")
     for epoch in range(35):
@@ -214,14 +225,12 @@ if __name__ == "__main__":
         for index, data in enumerate(x):
 
             opt.zero_grad()
-            output = test(torch.tensor([data]).type(torch.FloatTensor))
-            # print(len(x))
-            # print(len(y))
+            output = test(torch.tensor([data]).type(torch.FloatTensor), valid[index])
 
 
             # print(output)
-            # print(torch.tensor(y[index]).type(torch.FloatTensor))
-            loss = criterion(output, torch.tensor([[y[index]]]).type(torch.FloatTensor))
+
+            loss = criterion(output, torch.tensor([target[index]]))
             loss.backward()
             opt.step()
 
@@ -233,28 +242,18 @@ if __name__ == "__main__":
 
         correct = 0
         quest = 0
-        zeros = 0
-        ones = 0
         test_loss = 0
-        total = []
-        if epoch % 5 == 0:
+        if epoch % 10 == 1:
             for index, data in enumerate(x_test):
-                output = test(torch.tensor([data]).type(torch.FloatTensor))
-                loss = criterion(output, torch.tensor([y_test[index]]).type(torch.FloatTensor))
+                output = test(torch.tensor([data]).type(torch.FloatTensor), valid_test[index])
+                loss = criterion(output, torch.tensor([target_test[index]]))
                 test_loss += loss.item()
-                total.append(output.detach().numpy())
-                if (output < .5 and y_test[index] == 0) or (output > .5 and y_test[index] == 1):
-                    correct += 1
-                    if y_test[index] == 0:
-                        zeros += 1
-                    else:
-                        ones += 1
-                quest += 1
                 _, predicted = torch.max(output, 1)
-            # print(f"Correct Precent test: {correct/quest}")
+                if predicted[0] == target_test[index]:
+                    correct += 1
+                quest += 1
+            print(f"Correct Precent test: {correct/quest}")
             print(f"Test loss: {test_loss/index}")
-            print(f"Predicted precent: {correct/quest}\n0: {zeros}\n1: {ones}")
-            print(f"Stats: {np.mean(total)}, {np.std(total)}")
 
     correct = 0
     quest = 0
