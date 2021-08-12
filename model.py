@@ -48,7 +48,7 @@ class PieceSelection(nn.Module):
 
         self.flatten = nn.Flatten()
         self.relu = nn.ReLU(6)
-        self.conv = nn.Conv2d(12,FILTERS,kernel_size = 3, padding = 1)
+        self.conv = nn.Conv2d(13,FILTERS,kernel_size = 3, padding = 1)
         self.SE1 = SELayer(FILTERS, 32)
         self.SE2 = SELayer(FILTERS, 32)
         self.SE3 = SELayer(FILTERS, 32)
@@ -63,7 +63,7 @@ class PieceSelection(nn.Module):
 
     def forward(self, x, valid = ''):
         x = self.conv(x)
-        x = self.SE1(x) + self.SE2(x)
+        x = self.SE1(x) + self.SE2(x) + self.SE3(x)
         # x2 = self.SE2(x)
         # x3 = self.SE3(x)
         # x4 = self.SE4(x)
@@ -157,7 +157,7 @@ def get_piece_moved(board, spots):
         #     print(np.array(bitboard))
 
 
-
+        # print(board)
         bit_board_vals = [board[i][j][-(spots[i]//8+1)][spots[i]%8] for j in range(len(board[i]))]
         final_pieces.append(bit_board_vals.index(1)%6)
 
@@ -177,16 +177,16 @@ if __name__ == "__main__":
 
     start = datetime(2018, 12, 8)
     end = datetime(2021, 3, 7)
-    games = 300
+    games = 150
     print("gathering games")
 
-    white, black = get_moves('whoisis', start, end, games, split = True)
-
+    games = get_moves('whoisis', start, end, games, split = False)
+    # print(games)
     # black.extend(white)
-
+    # print(black)
     print("transorming data")
-    train, test = train_test_split(black)
-
+    train, test = train_test_split(games)
+    # print(train)
 
     x = [data[0] for data in train]
     valid = [legal_start(data[1]) for data in train]
@@ -197,7 +197,7 @@ if __name__ == "__main__":
     print(len(train))
     # get_piece_moved([data[0] for data in train], legal_start([data[2] for data in train], False))
 
-
+    # print(black[0])
     target = torch.tensor(get_piece_moved([data[0] for data in train], legal_start([data[2] for data in train], False))).type(torch.LongTensor)
 
     x_test = [data[0] for data in test]
@@ -243,16 +243,17 @@ if __name__ == "__main__":
         correct = 0
         quest = 0
         test_loss = 0
-        for index, data in enumerate(x_test):
-            output = test(torch.tensor([data]).type(torch.FloatTensor), valid_test[index])
-            loss = criterion(output, torch.tensor([target_test[index]]))
-            test_loss += loss.item()
-            _, predicted = torch.max(output, 1)
-            if predicted[0] == target_test[index]:
-                correct += 1
-            quest += 1
-        print(f"Correct Precent test: {correct/quest}")
-        print(f"Test loss: {test_loss/index}")
+        if epoch % 10 == 1:
+            for index, data in enumerate(x_test):
+                output = test(torch.tensor([data]).type(torch.FloatTensor), valid_test[index])
+                loss = criterion(output, torch.tensor([target_test[index]]))
+                test_loss += loss.item()
+                _, predicted = torch.max(output, 1)
+                if predicted[0] == target_test[index]:
+                    correct += 1
+                quest += 1
+            print(f"Correct Precent test: {correct/quest}")
+            print(f"Test loss: {test_loss/index}")
 
     correct = 0
     quest = 0

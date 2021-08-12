@@ -127,9 +127,10 @@ def gen_data(game, white: bool, not_dummy = True):
     game = chess.pgn.read_game(pgn)
     board = game.board()
 
-# board.legal_moves
+    # board.legal_moves
     data = []
     save_move = white
+    a = 1 if white else 0
     for move in game.mainline_moves():
 
 
@@ -138,17 +139,28 @@ def gen_data(game, white: bool, not_dummy = True):
             for legal_move in board.legal_moves:
                 legal.append(str(legal_move))
 
-            data.append([process_board(str(board), not_dummy), legal, str(move)])
+            to_move = np.array([[a]*8]*8)
+            # print(to_move)
+            bitboard = process_board(str(board), not_dummy)
+            bitboard.append(to_move)
+            data.append([bitboard, legal, str(move)])
+            # print([process_board(str(board), not_dummy), legal, str(move)])
+            # print(data[0])
+        # print(data)
 
 
+        # print(move)
         board.push(move)
         save_move = not save_move
-
+    # print(data[0])
+    # print("data in gen games")
     return data
 
 def gen_all(white_games, black_games, not_dummy = True):
     data = []
     data.extend(gen_games(white_games, True, not_dummy))
+    # print(gen_games(white_games, True, not_dummy))
+    # print("data")
     data.extend(gen_games(black_games, False, not_dummy))
 
     return data
@@ -162,16 +174,19 @@ def gen_games(games, white, not_dummy = True):
     return data
 
 def get_moves(name, start, end, games, split = True, not_dummy = True):
+    print("getting moves")
     retreaved_games = get_games('whoisis', start, end, games)
 
     white, black = split_bw(retreaved_games, 'whoisis')
 
     if split:
+        # print(gen_games(black, False, not_dummy)[0])
         return gen_games(white, True, not_dummy), gen_games(black, False, not_dummy)
 
     data = gen_all(white, black, not_dummy)
-
-    return data.reverse()
+    # print(data[0])
+    # print("data is", data)
+    return data
 
 if __name__ == "__main__":
 
