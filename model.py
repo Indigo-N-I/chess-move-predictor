@@ -1,4 +1,4 @@
-from moves import get_moves
+from moves import get_moves, get_all_moves, get_win_loss
 from datetime import datetime
 import numpy as np
 import os
@@ -15,55 +15,21 @@ from se_module import SELayer
 FILTERS = 128
 BLOCKS = 10
 
-class MaskingLayer(nn.Module):
-    def __init__(self):
-        super(MaskingLayer, self).__init__()
-
-    # def __init__(self, mask):
-    #     super(MaskingLayer, self).__init__()
-    #     self.set_mask(mask)
-
-    def forward(self, input):
-
-        b = AllowValid.apply
-        a = b(input, self.to_mask)
-
-        return b(input, self.to_mask)
-
-    def set_mask(self, mask):
-
-        self.to_mask = mask
-
-    def has_mask(self):
-        if self.to_mask:
-            return True
-        return False
-
-# most likely should rename piece selection to a more general name as
-# it will be used twice
 class PieceSelection(nn.Module):
     def __init__(self):
         super(PieceSelection, self).__init__()
-        self.mask = MaskingLayer()
 
         self.flatten = nn.Flatten()
-        self.relu = nn.ReLU(6)
-        self.conv = nn.Conv2d(13,FILTERS,kernel_size = 3, padding = 1)
+        self.relu = nn.ReLU()
+        self.linear = nn.Linear(8192, 1)
+        self.conv = nn.Conv2d(15,FILTERS,kernel_size = 3, padding = 1)
         self.SE1 = SELayer(FILTERS, 32)
         self.SE2 = SELayer(FILTERS, 32)
         self.SE3 = SELayer(FILTERS, 32)
-        self.SE4 = SELayer(FILTERS, 32)
-        self.SE5 = SELayer(FILTERS, 32)
-        self.SE6 = SELayer(FILTERS, 32)
-        self.SE7 = SELayer(FILTERS, 32)
-        self.SE8 = SELayer(FILTERS, 32)
-        self.SE9 = SELayer(FILTERS, 32)
-        self.SE10 = SELayer(FILTERS, 32)
-
 
     def forward(self, x, valid = ''):
         x = self.conv(x)
-        x = self.SE1(x) + self.SE2(x) + self.SE3(x)
+        x = self.SE1(x) + self.SE2(x)
         # x2 = self.SE2(x)
         # x3 = self.SE3(x)
         # x4 = self.SE4(x)
@@ -79,7 +45,12 @@ class PieceSelection(nn.Module):
         # print(x.shape)
         x = self.flatten(x)
         # self.mask.set_mask(valid)
+        # print("shape of x is:", x.shape)
         logits = self.relu(x)
+        # print("shape of logits is:", logits.shape)
+        # print(self.linear.weight)
+        logits = self.linear(logits)
+        # print("shape of logits is:", logits.shape)
         return logits
 
 # try this:
@@ -177,60 +148,47 @@ if __name__ == "__main__":
 
     start = datetime(2018, 12, 8)
     end = datetime(2021, 3, 7)
-    games = 150
+    game_num = 500
     print("gathering games")
 
-    games = get_moves('whoisis', start, end, games, split = False)
-    # print(games)
-    # black.extend(white)
-    # print(black)
+    games = get_win_loss('whoisis', start, end, game_num)
+
     print("transorming data")
     train, test = train_test_split(games)
-    # print(train)
 
     x = [data[0] for data in train]
-    valid = [legal_start(data[1]) for data in train]
+    y = [data[1] for data in train]
+    # print(f"Total amount of 1's train: {sum(y)}/{len(y)}")
 
-    # target = torch.tensor(legal_end([data[2] for data in train]))
-
-    # counts = translate_to_pieces([data[0] for data in train], legal_start([data[2] for data in train], False))
     print(len(train))
-    # get_piece_moved([data[0] for data in train], legal_start([data[2] for data in train], False))
-
-    # print(black[0])
-    target = torch.tensor(get_piece_moved([data[0] for data in train], legal_start([data[2] for data in train], False))).type(torch.LongTensor)
 
     x_test = [data[0] for data in test]
-    valid_test = [legal_start(data[1]) for data in test]
-    # target_test = torch.tensor(legal_end([data[2] for data in test]))
-    target_test = torch.tensor(get_piece_moved([data[0] for data in test], legal_start([data[2] for data in test], False))).type(torch.LongTensor)
-    print(target_test)
-
+    y_test = [data[1] for data in test]
+    # print(f"Total amount of 1's test: {sum(y_test)}/{len(y_test)}")
 
 
     print("creating network")
     test = PieceSelection()
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.MSELoss()
     lr = .01
-    opt = optim.SGD(test.parameters(), lr = .01)
-
-
-    # cwd = os.getcwd()
-    # torch.save(test.state_dict(), cwd)
+    opt = optim.Rprop(test.parameters(), lr = .01)
 
     print("training")
     for epoch in range(35):
         running_loss = 0.0
         opt = optim.SGD(test.parameters(), lr = lr*(.9**epoch),weight_decay=1e-5)
         for index, data in enumerate(x):
-
+            # print(index)
             opt.zero_grad()
-            output = test(torch.tensor([data]).type(torch.FloatTensor), valid[index])
+            output = test(torch.tensor([data]).type(torch.FloatTensor))
+            # print(len(x))
+            # print(len(y))
 
 
             # print(output)
-
-            loss = criterion(output, torch.tensor([target[index]]))
+            # print(torch.tensor(y[index]).type(torch.FloatTensor))
+            loss = criterion(output, torch.tensor([[y[index]]]).type(torch.FloatTensor))
+            # print(loss)
             loss.backward()
             opt.step()
 
@@ -242,18 +200,33 @@ if __name__ == "__main__":
 
         correct = 0
         quest = 0
+        zeros = 0
+        ones = 0
         test_loss = 0
-        if epoch % 10 == 1:
+        total = []
+        if epoch % 5 == 0:
             for index, data in enumerate(x_test):
-                output = test(torch.tensor([data]).type(torch.FloatTensor), valid_test[index])
-                loss = criterion(output, torch.tensor([target_test[index]]))
+                output = test(torch.tensor([data]).type(torch.FloatTensor))
+                loss = criterion(output, torch.tensor([y_test[index]]).type(torch.FloatTensor))
                 test_loss += loss.item()
-                _, predicted = torch.max(output, 1)
-                if predicted[0] == target_test[index]:
-                    correct += 1
-                quest += 1
-            print(f"Correct Precent test: {correct/quest}")
+                total.append(output.detach().numpy())
+                # if (output < 50 and y_test[index] == 0) or (output > 50 and y_test[index] == 100):
+                #     correct += 1
+                #     if y_test[index] == 0:
+                #         zeros += 1
+                #     else:
+                #         ones += 1
+                # quest += 1
+                # _, predicted = torch.max(output, 1)
+            # print(f"Correct Precent test: {correct/quest}")
             print(f"Test loss: {test_loss/index}")
+            # print(f"Predicted precent: {correct/quest}\n0: {zeros}\n1: {ones}")
+            print(f"Stats: {np.mean(total)}, {np.std(total)}")
+            cwd = os.getcwd()
+            string = cwd + f"\\model games_{game_num} epoch_{epoch}.pb"
+
+            torch.save(test.state_dict(), string)
+            print(f"ssaved as {string}")
 
     correct = 0
     quest = 0
@@ -264,8 +237,7 @@ if __name__ == "__main__":
             correct += 1
         quest += 1
     print(f"Correct Precent train: {correct/quest}")
-    # cwd = os.getcwd()
-    # torch.save(test.state_dict(), cwd)
+    # torch.save(the_model.state_dict(), )
 
 
             # running_loss += loss.item()

@@ -122,8 +122,84 @@ def process_board(iBoard, not_dummy = True):
 
     return create_bitboards(board)
 
+def gen_all_next_moves(game, white: bool, not_dummy = True):
+    # print(game)
+    pgn = io.StringIO(game)
+    game = chess.pgn.read_game(pgn)
+    board = game.board()
+
+    # board.legal_moves
+    data = []
+    save_move = white
+    # a = 1 if white else 0
+    for move in game.mainline_moves():
+
+
+        if save_move:
+            data = []
+            for legal_move in board.legal_moves:
+                dummy_board = board.copy()
+                dummy_board.push(legal_move)
+                if str(legal_move) != str(move):
+                    data.append([process_board(str(dummy_board), not_dummy),0])
+                else:
+                    data.append([process_board(str(dummy_board), not_dummy),1])
+            # print(to_move)
+            # bitboard = process_board(str(board), not_dummy)
+            # bitboard.append(to_move)
+            # data.append([bitboard, legal, str(move)])
+
+        board.push(move)
+        save_move = not save_move
+
+    return data
+
+def win_loss_data_gen(game):
+    pgn = io.StringIO(game)
+    result = game[game.index("Result")+ 7:  game.index("Result") + 20]
+    white_elo = game[game.index("WhiteElo") + 10: game.index("\"", game.index("WhiteElo") + 10)]
+    black_elo = game[game.index("BlackElo") + 10: game.index("\"", game.index("BlackElo") + 10)]
+    # print(white_elo)
+    # print(black_elo)
+    # print(game[game.index("BlackElo"):])
+    white_elo = int(white_elo)/1000 if "?" not in white_elo else 1.5
+    black_elo = int(black_elo)/1000 if "?" not in black_elo else 1.5
+    # print(white_elo)
+    # print(black_elo)
+    if "0-1" in result:
+        result = -1
+    elif "1/2" in result:
+        result = 0
+    else:
+        result = 1
+    game = chess.pgn.read_game(pgn)
+    board = game.board()
+
+    # board.legal_moves
+    data = []
+    a = 1
+    black = np.array([[black_elo]*8]*8)
+    white = np.array([[white_elo]*8]*8)
+    for move in game.mainline_moves():
+
+        to_move = np.array([[a]*8]*8)
+        # print(to_move)
+        bitboard = process_board(str(board))
+        bitboard.append(to_move)
+        bitboard.append(white)
+        bitboard.append(black)
+        data.append([bitboard, result])
+
+        a *= -1
+
+        board.push(move)
+
+    return data
+
 def gen_data(game, white: bool, not_dummy = True):
     pgn = io.StringIO(game)
+    # print(pgn)
+    # print(game)
     game = chess.pgn.read_game(pgn)
     board = game.board()
 
@@ -163,13 +239,32 @@ def gen_all(white_games, black_games, not_dummy = True):
     # print("data")
     data.extend(gen_games(black_games, False, not_dummy))
 
+    return dat
+
+def gen_all_game_moves(white_games, black_games, not_dummy = True):
+    data = []
+    for game in white_games:
+        data.extend(gen_all_next_moves(game, True, not_dummy))
+    # print(gen_games(white_games, True, not_dummy))
+    # print("data")
+    for game in black_games:
+        data.extend(gen_all_next_moves(game, False, not_dummy))
+
     return data
+
 
 def gen_games(games, white, not_dummy = True):
     data = []
 
     for game in games:
         data.extend(gen_data(game, white, not_dummy))
+
+    return data
+
+def gen_win_loss(games):
+    data = []
+    for game in games:
+        data.extend(win_loss_data_gen(game))
 
     return data
 
@@ -188,14 +283,46 @@ def get_moves(name, start, end, games, split = True, not_dummy = True):
     # print("data is", data)
     return data
 
-if __name__ == "__main__":
-
-    start = datetime(2018, 12, 8)
-    end = datetime(2020, 12, 9)
-    games = 2
-
+def get_all_moves(name, start, end, games, split = True, not_dummy = True):
+    print("getting all moves")
     retreaved_games = get_games('whoisis', start, end, games)
 
     white, black = split_bw(retreaved_games, 'whoisis')
 
-    data = gen_all(white, black)
+    if split:
+        # print(gen_games(black, False, not_dummy)[0])
+        return gen_games(white, True, not_dummy), gen_games(black, False, not_dummy)
+    # print(white)
+    data = gen_all_game_moves(white, black, not_dummy)
+    return data
+
+def get_win_loss(name, start, end, games):
+    retreaved_games = get_games('whoisis', start, end, games)
+
+    white, black = split_bw(retreaved_games, 'whoisis')
+
+    data = gen_all_win_loss(white, black)
+    return data
+
+def gen_all_win_loss(white, black):
+
+    data = []
+    data.extend(gen_win_loss(white))
+    data.extend(gen_win_loss(black))
+
+    return data
+
+if __name__ == "__main__":
+
+    start = datetime(2018, 12, 8)
+    end = datetime(2020, 12, 9)
+    games = 13
+
+    retreaved_games = get_games('whoisis', start, end, games)
+    # for game in retreaved_games:
+    #     print(game)
+    #     break
+
+    white, black = split_bw(retreaved_games, 'whoisis')
+    # print(black)
+    data = gen_all_win_loss(black, white)
