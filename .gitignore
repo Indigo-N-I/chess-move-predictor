@@ -129,4 +129,4 @@ dmypy.json
 .pyre/
 
 lichess_id.py
-.pb
+*.pb
