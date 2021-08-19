@@ -11,9 +11,12 @@ from functions import AllowValid
 from sklearn.model_selection import train_test_split
 from collections import Counter
 from se_module import SELayer
+import pickle
 
+modifiers = "from pickle"
 FILTERS = 128
 BLOCKS = 10
+GATHERING_DATA = False
 
 class PieceSelection(nn.Module):
     def __init__(self):
@@ -146,14 +149,17 @@ if __name__ == "__main__":
       dev = "cpu"
     print(f"using {dev}")
 
-    start = datetime(2018, 12, 8)
-    end = datetime(2021, 3, 7)
-    game_num = 500
-    print("gathering games")
+    if GATHERING_DATA:
+        start = datetime(2018, 12, 8)
+        end = datetime(2021, 3, 7)
+        game_num = 500
+        print("gathering games")
 
-    games = get_win_loss('whoisis', start, end, game_num)
+        games = get_win_loss('whoisis', start, end, game_num)
 
-    print("transorming data")
+        print("transorming data")
+    else:
+        games = pickle.load(open("win_loss.p", "rb"))
     train, test = train_test_split(games)
 
     x = [data[0] for data in train]
@@ -169,6 +175,12 @@ if __name__ == "__main__":
 
     print("creating network")
     test = PieceSelection()
+
+    cwd = os.getcwd()
+
+    string = cwd + f"\\model games_{500} epoch_{10}.pb"
+
+    test.load_state_dict(torch.load(string))
     criterion = nn.MSELoss()
     lr = .01
     opt = optim.Rprop(test.parameters(), lr = .01)
@@ -206,24 +218,17 @@ if __name__ == "__main__":
         total = []
         if epoch % 5 == 0:
             for index, data in enumerate(x_test):
-                output = test(torch.tensor([data]).type(torch.FloatTensor))
-                loss = criterion(output, torch.tensor([y_test[index]]).type(torch.FloatTensor))
-                test_loss += loss.item()
-                total.append(output.detach().numpy())
-                # if (output < 50 and y_test[index] == 0) or (output > 50 and y_test[index] == 100):
-                #     correct += 1
-                #     if y_test[index] == 0:
-                #         zeros += 1
-                #     else:
-                #         ones += 1
-                # quest += 1
-                # _, predicted = torch.max(output, 1)
+                output = model(torch.tensor([data]).type(torch.FloatTensor))
+                loss =  criterion(output, torch.tensor([y[index]]).type(torch.FloatTensor))
+                results[y[index]].append((loss, output))
+
+            pickle.dump(results, open(f"result epoch_{epoch} {modifiers}.p", "wb"))
             # print(f"Correct Precent test: {correct/quest}")
-            print(f"Test loss: {test_loss/index}")
-            # print(f"Predicted precent: {correct/quest}\n0: {zeros}\n1: {ones}")
-            print(f"Stats: {np.mean(total)}, {np.std(total)}")
-            cwd = os.getcwd()
-            string = cwd + f"\\model games_{game_num} epoch_{epoch}.pb"
+            # print(f"Test loss: {test_loss/index}")
+            # # print(f"Predicted precent: {correct/quest}\n0: {zeros}\n1: {ones}")
+            # print(f"Stats: {np.mean(total)}, {np.std(total)}")
+            # cwd = os.getcwd()
+            # string = cwd + f"\\model games_{game_num} epoch_{epoch} {modifiers}.pb"
 
             torch.save(test.state_dict(), string)
             print(f"ssaved as {string}")
