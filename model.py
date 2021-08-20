@@ -1,4 +1,4 @@
-from moves import get_moves
+from moves import get_moves, get_all_moves, get_win_loss
 from datetime import datetime
 import numpy as np
 import os
@@ -10,51 +10,51 @@ import torch.optim as optim
 from functions import AllowValid
 from sklearn.model_selection import train_test_split
 from collections import Counter
+from se_module import SELayer
+import pickle
+from collections import defaultdict
 
-class MaskingLayer(nn.Module):
-    def __init__(self):
-        super(MaskingLayer, self).__init__()
+modifiers = "categories"
+FILTERS = 128
+BLOCKS = 10
+GATHERING_DATA = True
 
-    # def __init__(self, mask):
-    #     super(MaskingLayer, self).__init__()
-    #     self.set_mask(mask)
-
-    def forward(self, input):
-        # print("doing allowvalid")
-        b = AllowValid.apply
-        a = b(input, self.to_mask)
-        # print(a)
-        return b(input, self.to_mask)
-
-    def set_mask(self, mask):
-        # print('set mask to:', mask)
-        self.to_mask = mask
-
-    def has_mask(self):
-        if self.to_mask:
-            return True
-        return False
-
-# most likely should rename piece selection to a more general name as
-# it will be used twice
 class PieceSelection(nn.Module):
     def __init__(self):
         super(PieceSelection, self).__init__()
-        self.mask = MaskingLayer()
 
         self.flatten = nn.Flatten()
-        self.linear_relu_stack = nn.Sequential(
-            nn.Linear(64, 64),
-            nn.Dropout(.2),
-            nn.LeakyReLU(),
-            nn.Linear(64, 6),
-        )
+        self.relu = nn.ReLU()
+        self.linear = nn.Linear(8192, 3)
+        self.conv = nn.Conv2d(15,FILTERS,kernel_size = 3, padding = 1)
+        self.SE1 = SELayer(FILTERS, 32)
+        self.SE2 = SELayer(FILTERS, 32)
+        self.SE3 = SELayer(FILTERS, 32)
 
     def forward(self, x, valid = ''):
-        # print(x)
+        x = self.conv(x)
+        x = self.SE1(x) + self.SE2(x)
+        # x2 = self.SE2(x)
+        # x3 = self.SE3(x)
+        # x4 = self.SE4(x)
+        # x5 = self.SE5(x)
+        # x6 = self.SE6(x)
+        # x7 = self.SE7(x)
+        # x8 = self.SE8(x)
+        # x9 = self.SE9(x)
+        # x10 = self.SE10(x)
+
+        # x = x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10
+
+        # print(x.shape)
         x = self.flatten(x)
-        self.mask.set_mask(valid)
-        logits = self.linear_relu_stack(x)
+        # self.mask.set_mask(valid)
+        # print("shape of x is:", x.shape)
+        logits = self.relu(x)
+        # print("shape of logits is:", logits.shape)
+        # print(self.linear.weight)
+        logits = self.linear(logits)
+        # print("shape of logits is:", logits.shape)
         return logits
 
 # try this:
@@ -67,10 +67,10 @@ def translate_to_num(location):
     '''
     #A1 -> 0
     #B1 -> 1
-    # print(location)
+
     add = ord(location[0]) - ord('a')
-    # print(add)
-    # print(location, (int(location[1]) - 1)*8 + add  )
+
+
     return (int(location[1]) - 1)*8 + add
     # pass
 
@@ -93,7 +93,7 @@ def piece_select_loss(output, valid, target):
     allowed_starts = [translate_to_num(move[:2]) for move in valid]
     possible = allow_only_valid(output, allowed_starts)
     c = nn.CrossEntropyLoss()
-    # print(possible.size())
+
     return c(possible, torch.tensor([translate_to_num(target[:2])]))
 
 def legal_start(moves, to_set = True):
@@ -116,105 +116,124 @@ def legal_end(moves):
     '''
     legal = []
     for move in moves:
-        # print(moves)
-        # print(move)
+
+
         legal.append(translate_to_num(move[2:4]))
 
     return legal
 
-def translate_to_pieces(board, spots):
+def get_piece_moved(board, spots):
     final_pieces = []
     print(len(board), len(spots))
     for i in range(len(board)):
-        # print(spots[i], spots[i]//8, spots[i]%8)
-        # print(translate_from_num(spots[i]))
-        # print(board[i])
-        a = abs(board[i][-(spots[i]//8+1)][spots[i]%8])
-        final_pieces.append(a - 1)
-        # print(f"adding {a}")
+
+
+        # for bitboard in board[i]:
+        #     print(np.array(bitboard))
+
+
+        # print(board)
+        bit_board_vals = [board[i][j][-(spots[i]//8+1)][spots[i]%8] for j in range(len(board[i]))]
+        final_pieces.append(bit_board_vals.index(1)%6)
+
+
     return final_pieces
 
 
 if __name__ == "__main__":
+    torch.autograd.set_detect_anomaly(True)
 
-    start = datetime(2018, 12, 8)
-    end = datetime(2021, 3, 7)
-    games = 300
-    print("gathering games")
+    print(torch.cuda.is_available())
+    if torch.cuda.is_available():
+      dev = "cuda:0"
+    else:
+      dev = "cpu"
+    print(f"using {dev}")
 
-    white, black = get_moves('whoisis', start, end, games, split = True)
-    # for i in range(len(black)):
-    #     black[i][0] *= -1
+    if GATHERING_DATA:
+        start = datetime(2018, 12, 8)
+        end = datetime(2021, 3, 7)
+        game_num = 500
+        print("gathering games")
 
-    # black.extend(white)
-    # print(black[-1])
-    print("transorming data")
-    train, test = train_test_split(black)
-    # print(train[0])
+        games = get_win_loss('whoisis', start, end, game_num)
+
+        print("transorming data")
+    else:
+        games = pickle.load(open("win_loss.p", "rb"))
+    train, test = train_test_split(games)
 
     x = [data[0] for data in train]
-    valid = [legal_start(data[1]) for data in train]
-    # print(translate_to_pieces(train[0], train[2]))
-    # target = torch.tensor(legal_end([data[2] for data in train]))
-    counts = translate_to_pieces([data[0] for data in train], legal_start([data[2] for data in train], False))
+    y = [data[1] for data in train]
+    # print(f"Total amount of 1's train: {sum(y)}/{len(y)}")
 
-    print(Counter(counts))
-
-    target = torch.tensor(translate_to_pieces([data[0] for data in train], legal_start([data[2] for data in train], False))).type(torch.LongTensor)
+    print(len(train))
 
     x_test = [data[0] for data in test]
-    valid_test = [legal_start(data[1]) for data in test]
-    # target_test = torch.tensor(legal_end([data[2] for data in test]))
-    target_test = torch.tensor(translate_to_pieces([data[0] for data in test], legal_start([data[2] for data in test], False))).type(torch.LongTensor)
-    print(target_test)
-    # print(torch.tensor(x).shape)
-    # print(print(len(valid)))
+    y_test = [data[1] for data in test]
+    # print(f"Total amount of 1's test: {sum(y_test)}/{len(y_test)}")
+
 
     print("creating network")
     test = PieceSelection()
-    criterion = nn.CrossEntropyLoss()
-    lr = .01
-    opt = optim.SGD(test.parameters(), lr = .01)
-    # print(test)
 
     # cwd = os.getcwd()
-    # torch.save(test.state_dict(), cwd)
+    #
+    # string = cwd + f"\\model games_{500} epoch_{10}.pb"
+    #
+    # test.load_state_dict(torch.load(string))
+    criterion = nn.CrossEntropyLoss()
+    lr = .01
+    opt = optim.Rprop(test.parameters(), lr = .01)
 
     print("training")
-    for epoch in range(35):
+    for epoch in range(36):
         running_loss = 0.0
         opt = optim.SGD(test.parameters(), lr = lr*(.9**epoch),weight_decay=1e-5)
         for index, data in enumerate(x):
-            # print(valid[index])
+            # print(index)
             opt.zero_grad()
-            output = test(torch.tensor([data]).type(torch.FloatTensor), valid[index])
-            # print(torch.tensor(output).shape, output)
-            # print(target.shape, output.shape)
-            # print(target, index)
-            # print(output, torch.tensor([target[index]]))
-            loss = criterion(output, torch.tensor([target[index]]))
+            output = test(torch.tensor([data]).type(torch.FloatTensor))
+            # print(len(x))
+            # print(len(y))
+
+
+            # print(output)
+            # print(torch.tensor(y[index]).type(torch.FloatTensor))
+            loss = criterion(output, torch.tensor([y[index]]).type(torch.FloatTensor))
+            # print(loss)
             loss.backward()
             opt.step()
 
             running_loss += loss.item()
-            if index % 2000 == 1999:    # print every 2000 mini-batches
+            if index % 2000 == 1999:
                 print('[%d, %5d] loss: %.3f' %
                       (epoch + 1, index + 1, running_loss / 2000))
                 running_loss = 0.0
-        # print(f"epoch {epoch} results, index max: {index}")
+
         correct = 0
         quest = 0
+        zeros = 0
+        ones = 0
         test_loss = 0
-        for index, data in enumerate(x_test):
-            output = test(torch.tensor([data]).type(torch.FloatTensor), valid_test[index])
-            loss = criterion(output, torch.tensor([target_test[index]]))
-            test_loss += loss.item()
-            _, predicted = torch.max(output, 1)
-            if predicted[0] == target_test[index]:
-                correct += 1
-            quest += 1
-        print(f"Correct Precent test: {correct/quest}")
-        print(f"Test loss: {test_loss/index}")
+        total = []
+        results = defaultdict(list)
+        if epoch % 5 == 0:
+            for index, data in enumerate(x_test):
+                output = test(torch.tensor([data]).type(torch.FloatTensor))
+                loss =  criterion(output, torch.tensor([y[index]]).type(torch.FloatTensor))
+                results[y[index]].append((loss, output))
+
+            pickle.dump(results, open(f"result epoch_{epoch} {modifiers}.p", "wb"))
+            # print(f"Correct Precent test: {correct/quest}")
+            # print(f"Test loss: {test_loss/index}")
+            # # print(f"Predicted precent: {correct/quest}\n0: {zeros}\n1: {ones}")
+            # print(f"Stats: {np.mean(total)}, {np.std(total)}")
+            # cwd = os.getcwd()
+            # string = cwd + f"\\model games_{game_num} epoch_{epoch} {modifiers}.pb"
+
+            torch.save(test.state_dict(), string)
+            print(f"ssaved as {string}")
 
     correct = 0
     quest = 0
@@ -225,9 +244,8 @@ if __name__ == "__main__":
             correct += 1
         quest += 1
     print(f"Correct Precent train: {correct/quest}")
-    # cwd = os.getcwd()
-    # torch.save(test.state_dict(), cwd)
-            # print(loss.item())
+    # torch.save(the_model.state_dict(), )
+
 
             # running_loss += loss.item()
             # if
@@ -241,18 +259,16 @@ if __name__ == "__main__":
 
     # for k in range(64):
     #     print(translate_from_num(k))
-    # print(black[0][1])
-    # print(np.transpose((black[5][0]>0).nonzero()), '\n', black[5][0])
+
+
     # device = 'cuda' if torch.cuda.is_available() else 'cpu'
     #
-    # print('Using {} device'.format(device))
+
     # y = torch.rand(1, 8, 8, device=device)
 
     # model = PieceSelection().to(device)
     # X = torch.tensor([black[0][0]]).type(torch.FloatTensor)
-    # print(X.shape)
+
     # logits = model(X)
     # pred_probab = nn.Softmax(dim=1)(logits)
     # y_pred = pred_probab.argmax(1)
-    # print(f"Predicted class: {y_pred}")
-    # print(pred_probab)
