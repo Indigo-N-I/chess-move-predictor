@@ -12,11 +12,12 @@ from sklearn.model_selection import train_test_split
 from collections import Counter
 from se_module import SELayer
 import pickle
+from collections import defaultdict
 
-modifiers = "from pickle"
+modifiers = "categories"
 FILTERS = 128
 BLOCKS = 10
-GATHERING_DATA = False
+GATHERING_DATA = True
 
 class PieceSelection(nn.Module):
     def __init__(self):
@@ -24,7 +25,7 @@ class PieceSelection(nn.Module):
 
         self.flatten = nn.Flatten()
         self.relu = nn.ReLU()
-        self.linear = nn.Linear(8192, 1)
+        self.linear = nn.Linear(8192, 3)
         self.conv = nn.Conv2d(15,FILTERS,kernel_size = 3, padding = 1)
         self.SE1 = SELayer(FILTERS, 32)
         self.SE2 = SELayer(FILTERS, 32)
@@ -176,17 +177,17 @@ if __name__ == "__main__":
     print("creating network")
     test = PieceSelection()
 
-    cwd = os.getcwd()
-
-    string = cwd + f"\\model games_{500} epoch_{10}.pb"
-
-    test.load_state_dict(torch.load(string))
-    criterion = nn.MSELoss()
+    # cwd = os.getcwd()
+    #
+    # string = cwd + f"\\model games_{500} epoch_{10}.pb"
+    #
+    # test.load_state_dict(torch.load(string))
+    criterion = nn.CrossEntropyLoss()
     lr = .01
     opt = optim.Rprop(test.parameters(), lr = .01)
 
     print("training")
-    for epoch in range(35):
+    for epoch in range(36):
         running_loss = 0.0
         opt = optim.SGD(test.parameters(), lr = lr*(.9**epoch),weight_decay=1e-5)
         for index, data in enumerate(x):
@@ -199,7 +200,7 @@ if __name__ == "__main__":
 
             # print(output)
             # print(torch.tensor(y[index]).type(torch.FloatTensor))
-            loss = criterion(output, torch.tensor([[y[index]]]).type(torch.FloatTensor))
+            loss = criterion(output, torch.tensor([y[index]]).type(torch.FloatTensor))
             # print(loss)
             loss.backward()
             opt.step()
@@ -216,9 +217,10 @@ if __name__ == "__main__":
         ones = 0
         test_loss = 0
         total = []
+        results = defaultdict(list)
         if epoch % 5 == 0:
             for index, data in enumerate(x_test):
-                output = model(torch.tensor([data]).type(torch.FloatTensor))
+                output = test(torch.tensor([data]).type(torch.FloatTensor))
                 loss =  criterion(output, torch.tensor([y[index]]).type(torch.FloatTensor))
                 results[y[index]].append((loss, output))
 

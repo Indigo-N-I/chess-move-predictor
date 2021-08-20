@@ -11,7 +11,7 @@ import numpy as np
 import os
 
 
-games = pickle.load(open("win_loss.p", "rb"))
+# games = pickle.load(open("win_loss.p", "rb"))
 # model = PieceSelection()
 # cwd = os.getcwd()
 #
@@ -20,22 +20,22 @@ games = pickle.load(open("win_loss.p", "rb"))
 #
 #
 # x = [data[0] for data in games]
-y = [data[1] for data in games]
-print(y.count(-1), y.count(1),y.count(0))
+# y = [data[1] for data in games]
+# print(y.count(-1), y.count(1),y.count(0))
 
 #
 # criterion = nn.MSELoss()
 #
 # results = defaultdict(list)
+# #
+# for index, data in enumerate(x):
+#     output = model(torch.tensor([data]).type(torch.FloatTensor))
+#     loss =  criterion(output, torch.tensor([y[index]]).type(torch.FloatTensor))
+#     results[y[index]].append((loss, output))
 #
-for index, data in enumerate(x):
-    output = model(torch.tensor([data]).type(torch.FloatTensor))
-    loss =  criterion(output, torch.tensor([y[index]]).type(torch.FloatTensor))
-    results[y[index]].append((loss, output))
+#     pickle.dump(results, open("result.p", "wb"))
 
-    pickle.dump(results, open("result.p", "wb"))
-
-results = pickle.load(open("result.p", 'rb'))
+results = pickle.load(open("result epoch_15 from pickle.p", 'rb'))
 
 mse_result = {}
 pred_result = {}

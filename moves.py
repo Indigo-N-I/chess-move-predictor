@@ -167,11 +167,11 @@ def win_loss_data_gen(game):
     # print(white_elo)
     # print(black_elo)
     if "0-1" in result:
-        result = -1
+        result = [1,0,0]
     elif "1/2" in result:
-        result = 0
+        result = [0,1,0]
     else:
-        result = 1
+        result = [0,0,1]
     game = chess.pgn.read_game(pgn)
     board = game.board()
 
