@@ -73,6 +73,7 @@ docs/_build/
 
 # PyBuilder
 target/
+chess_predictor/
 
 # Jupyter Notebook
 .ipynb_checkpoints
