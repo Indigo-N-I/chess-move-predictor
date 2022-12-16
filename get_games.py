@@ -34,7 +34,7 @@ def split_bw(games, user):
 if __name__ == "__main__":
 
     start = datetime(2018, 12, 8)
-    end = datetime(2020, 12, 9)
+    end = datetime(2022, 12, 9)
     games = 20
 
     retreaved_games = get_games('whoisis', start, end, games)

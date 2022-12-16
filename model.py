@@ -17,7 +17,7 @@ from collections import defaultdict
 modifiers = "categories"
 FILTERS = 128
 BLOCKS = 10
-GATHERING_DATA = True
+GATHERING_DATA = False
 
 class PieceSelection(nn.Module):
     def __init__(self):
@@ -164,13 +164,14 @@ if __name__ == "__main__":
     train, test = train_test_split(games)
 
     x = [data[0] for data in train]
-    y = [data[1] for data in train]
+    y = [tuple(data[1]) for data in train]
     # print(f"Total amount of 1's train: {sum(y)}/{len(y)}")
+    print(y)
 
     print(len(train))
 
     x_test = [data[0] for data in test]
-    y_test = [data[1] for data in test]
+    y_test = [tuple(data[1]) for data in test]
     # print(f"Total amount of 1's test: {sum(y_test)}/{len(y_test)}")
 
 
@@ -229,8 +230,8 @@ if __name__ == "__main__":
             # print(f"Test loss: {test_loss/index}")
             # # print(f"Predicted precent: {correct/quest}\n0: {zeros}\n1: {ones}")
             # print(f"Stats: {np.mean(total)}, {np.std(total)}")
-            # cwd = os.getcwd()
-            # string = cwd + f"\\model games_{game_num} epoch_{epoch} {modifiers}.pb"
+            cwd = os.getcwd()
+            string = cwd + f"\\model games_{game_num} epoch_{epoch} {modifiers}.pb"
 
             torch.save(test.state_dict(), string)
             print(f"ssaved as {string}")
